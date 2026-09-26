@@ -1,0 +1,5 @@
+spring:
+  application:
+    name: mall-manager
+  profiles:
+    active: dev

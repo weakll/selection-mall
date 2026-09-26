@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+
+<mapper namespace="io.github.weakll.mall.user.mapper.UserAddressMapper">
+
+    <resultMap id="userAddressMap" type="io.github.weakll.mall.model.entity.user.UserAddress" autoMapping="true">
+    </resultMap>
+
+    <!-- 用于select查询公用抽取的列 -->
+    <sql id="columns">
+        id,user_id,name,phone,tag_name,province_code,city_code,district_code,address,full_address,is_default,create_time,update_time,is_deleted
+    </sql>
+
+    <select id="findByUserId" resultMap="userAddressMap">
+        select <include refid="columns" />
+        from user_address
+        where
+        user_id = #{userId}
+        and is_deleted = 0
+    </select>
+
+
+
+    <select id="getById" resultMap="userAddressMap">
+        select <include refid="columns" />
+        from user_address
+        where
+        id = #{id}
+        and is_deleted = 0
+    </select>
+
+    <insert id="save" parameterType="io.github.weakll.mall.model.entity.user.UserAddress">
+        insert into user_address (
+            user_id, name, phone, tag_name, province_code, city_code, district_code,
+            address, full_address, is_default, create_time, update_time, is_deleted
+        ) values (
+            #{userId}, #{name}, #{phone}, #{tagName}, #{provinceCode}, #{cityCode}, #{districtCode},
+            #{address}, #{fullAddress}, #{isDefault}, NOW(), NOW(), 0
+        )
+    </insert>
+
+    <update id="updateById" parameterType="io.github.weakll.mall.model.entity.user.UserAddress">
+        update user_address set
+            name = #{name},
+            phone = #{phone},
+            tag_name = #{tagName},
+            province_code = #{provinceCode},
+            city_code = #{cityCode},
+            district_code = #{districtCode},
+            address = #{address},
+            full_address = #{fullAddress},
+            is_default = #{isDefault},
+            update_time = NOW()
+        where id = #{id}
+    </update>
+
+    <update id="deleteById">
+        update user_address set is_deleted = 1, update_time = NOW() where id = #{id} and user_id = #{userId} and is_deleted = 0
+    </update>
+</mapper>

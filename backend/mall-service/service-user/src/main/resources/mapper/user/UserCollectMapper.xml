@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="io.github.weakll.mall.user.mapper.UserCollectMapper">
+
+    <resultMap id="userCollectMap" type="io.github.weakll.mall.model.entity.user.UserCollect" autoMapping="true">
+    </resultMap>
+
+    <!-- 用于select查询公用抽取的列 -->
+    <sql id="columns">
+        id,user_id,sku_id,create_time,update_time,is_deleted
+    </sql>
+
+    <select id="findByUserIdAndSkuId" resultMap="userCollectMap">
+        select <include refid="columns" />
+        from user_collect
+        where user_id = #{userId}
+        and sku_id = #{skuId}
+        and is_deleted = 0
+        limit 1
+    </select>
+
+    <select id="findByUserId" resultMap="userCollectMap">
+        select <include refid="columns" />
+        from user_collect
+        where user_id = #{userId}
+        and is_deleted = 0
+        order by create_time desc
+    </select>
+
+    <insert id="save" useGeneratedKeys="true" keyProperty="id">
+        insert into user_collect (
+            id,
+            user_id,
+            sku_id,
+            create_time,
+            update_time,
+            is_deleted
+        ) values (
+                     #{id},
+                     #{userId},
+                     #{skuId},
+                     now(),
+                     now(),
+                     0
+                 )
+    </insert>
+
+    <update id="deleteByUserIdAndSkuId">
+        update user_collect set
+                                is_deleted = 1,
+                                update_time = now()
+        where user_id = #{userId}
+          and sku_id = #{skuId}
+          and is_deleted = 0
+    </update>
+
+</mapper>

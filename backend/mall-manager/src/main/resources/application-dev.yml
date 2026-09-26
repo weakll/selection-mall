@@ -1,0 +1,42 @@
+# 配置服务端口号
+server:
+  port: 8501
+
+# 配置数据库连接信息
+spring:
+  application:
+    name: mall-manager
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
+  datasource:
+    type: com.zaxxer.hikari.HikariDataSource
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:selection_mall}?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USERNAME:selection_mall}
+    password: ${MYSQL_PASSWORD:change_me}
+  # Redis的相关配置
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+
+
+
+# mybatis的配置
+mybatis:
+  config-location: classpath:/mybatis-config.xml
+  mapper-locations: classpath:/mapper/user/*.xml  #<-- 扫描mapper文件,注意路径的配置，否则会出现无法识别到xml文件的情况>
+
+mall:
+  auth:
+    noAuthUrls:
+      - /admin/system/index/login
+      - /admin/system/index/generateValidateCode
+  minio:
+    endpointUrl: ${MINIO_ENDPOINT:http://127.0.0.1:9000}
+    accessKey: ${MINIO_ACCESS_KEY:minioadmin}
+    secreKey: ${MINIO_SECRET_KEY:change_me}
+    bucketName: ${MINIO_BUCKET:mall-bucket}

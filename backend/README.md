@@ -23,7 +23,15 @@ backend/
 └─ mall-service-client/
 ```
 
-## 迁移规则
+## 当前状态
+
+后端源码已经迁入，模块坐标统一为 `io.github.weakll.mall`，并已通过以下构建验证：
+
+```bash
+mvn -DskipTests clean package
+```
+
+## 后续改造规则
 
 - 不复制构建产物、日志、IDE 配置和本地密钥。
 - 所有模块统一使用 `mall-` 或 `service-` 命名。

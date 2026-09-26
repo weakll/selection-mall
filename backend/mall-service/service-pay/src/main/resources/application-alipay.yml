@@ -1,0 +1,9 @@
+mall:
+  alipay:
+    alipay_url: ${ALIPAY_URL:https://openapi.alipaydev.com/gateway.do}
+    app_id: ${ALIPAY_APP_ID:}
+    app_private_key: ${ALIPAY_APP_PRIVATE_KEY:}
+    alipay_public_key: ${ALIPAY_PUBLIC_KEY:}
+    return_payment_url: ${ALIPAY_RETURN_URL:http://127.0.0.1:5173/#/pages/money/paySuccess}
+    notify_payment_url: ${ALIPAY_NOTIFY_URL:http://127.0.0.1:8500/api/order/alipay/callback/notify}
+    frontend_url: ${MALL_H5_URL:http://127.0.0.1:5173}

@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!-- 空配置，避免 Nacos 找不到日志配置文件的警告 -->
+</configuration>

@@ -1,0 +1,59 @@
+package io.github.weakll.mall.manager.controller;
+
+import io.github.weakll.mall.common.log.annotation.Log;
+import io.github.weakll.mall.manager.service.SysRoleService;
+import io.github.weakll.mall.model.dto.system.SysRoleDto;
+import io.github.weakll.mall.model.entity.system.SysRole;
+import io.github.weakll.mall.model.vo.common.Result;
+import io.github.weakll.mall.model.vo.common.ResultCodeEnum;
+import com.github.pagehelper.PageInfo;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
+
+@RestController
+@RequestMapping(value = "/admin/system/sysRole")
+public class SysRoleController {
+    @Autowired
+    private SysRoleService sysRoleService;
+    //分页
+    @PostMapping("/findByPage/{pageNum}/{pageSize}")
+    public Result<PageInfo<SysRole>> findByPage(@RequestBody SysRoleDto sysRoleDto,
+                                                @PathVariable(value = "pageNum") Integer pageNum,
+                                                @PathVariable(value = "pageSize") Integer pageSize){
+        PageInfo<SysRole> pageInfo = sysRoleService.findByPage(sysRoleDto, pageNum, pageSize);
+        return Result.build(pageInfo, ResultCodeEnum.SUCCESS);
+
+    }
+    //添加
+    @Log(title = "⻆⾊添加",businessType = 0) //添加Log注解，设置属性
+    @PostMapping(value = "/saveSysRole")
+    public Result saveSysRole(@RequestBody SysRole SysRole) {
+        sysRoleService.saveSysRole(SysRole) ;
+       return Result.build(null , ResultCodeEnum.SUCCESS) ;
+    }
+    //修改
+    @PutMapping(value = "/updateSysRole")
+    public Result updateSysRole(@RequestBody SysRole sysRole) {
+        sysRoleService.updateSysRole(sysRole) ;
+        return Result.build(null , ResultCodeEnum.SUCCESS) ;
+    }
+//删除
+@DeleteMapping(value = "/deleteById/{roleId}")
+public Result deleteById(@PathVariable(value = "roleId") Long roleId) {
+    sysRoleService.deleteById(roleId) ;
+    return Result.build(null , ResultCodeEnum.SUCCESS) ;
+}
+//角色分配
+//@GetMapping(value = "/findAllRoles")
+//public Result<Map<String , Object>> findAllRoles() {
+//    Map<String, Object> resultMap = sysRoleService.findAllRoles();
+//    return Result.build(resultMap , ResultCodeEnum.SUCCESS) ;
+//}
+    @GetMapping(value = "/findAllRoles/{userId}")
+    public Result<Map<String , Object>> findAllRoles(@PathVariable(value = "userId") Long userId) {
+        Map<String, Object> resultMap = sysRoleService.findAllRoles(userId);
+        return Result.build(resultMap , ResultCodeEnum.SUCCESS) ;
+    }
+}
