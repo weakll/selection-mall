@@ -1,39 +1,46 @@
 package io.github.weakll.mall.product.cache;
 
+import io.github.weakll.mall.common.cache.CacheConstants;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
+import org.springframework.data.redis.cache.RedisCacheWriter;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 import java.time.Duration;
+import java.util.Map;
 
 @Configuration
 public class RedisConfig {
     @Bean
     public CacheManager cacheManager(LettuceConnectionFactory connectionFactory) {
-
-        //定义序列化器
         GenericJackson2JsonRedisSerializer genericJackson2JsonRedisSerializer = new GenericJackson2JsonRedisSerializer();
         StringRedisSerializer stringRedisSerializer = new StringRedisSerializer();
 
-
-        RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
-                //过期时间600秒
-                .entryTtl(Duration.ofSeconds(600))
-                // 配置序列化
+        RedisCacheConfiguration defaultConfig = RedisCacheConfiguration.defaultCacheConfig()
                 .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(stringRedisSerializer))
                 .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(genericJackson2JsonRedisSerializer));
 
-        RedisCacheManager cacheManager = RedisCacheManager.builder(connectionFactory)
-                .cacheDefaults(config)
+        Map<String, RedisCacheConfiguration> cacheConfigurations = Map.of(
+                CacheConstants.PRODUCT_ITEM, defaultConfig.entryTtl(Duration.ofMinutes(30)),
+                CacheConstants.CATEGORY_TREE, defaultConfig.entryTtl(Duration.ofHours(6)),
+                CacheConstants.CATEGORY_ONE, defaultConfig.entryTtl(Duration.ofHours(6)),
+                CacheConstants.BRAND_LIST, defaultConfig.entryTtl(Duration.ofHours(6))
+        );
+
+        RedisCacheWriter cacheWriter = new JitterRedisCacheWriter(
+                RedisCacheWriter.nonLockingRedisCacheWriter(connectionFactory),
+                Duration.ofMinutes(5)
+        );
+
+        return RedisCacheManager.builder(cacheWriter)
+                .cacheDefaults(defaultConfig.entryTtl(Duration.ofMinutes(30)))
+                .withInitialCacheConfigurations(cacheConfigurations)
                 .build();
-
-        return cacheManager;
     }
-
 }

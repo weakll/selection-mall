@@ -23,6 +23,11 @@
             <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-cache</artifactId>
+        </dependency>
+
         <!-- hutool 工具包，用于生成验证码 -->
         <dependency>
             <groupId>cn.hutool</groupId>

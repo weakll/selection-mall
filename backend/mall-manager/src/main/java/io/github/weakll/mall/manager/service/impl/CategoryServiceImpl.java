@@ -1,6 +1,7 @@
 package io.github.weakll.mall.manager.service.impl;
 
 import com.alibaba.excel.EasyExcel;
+import io.github.weakll.mall.common.cache.CacheConstants;
 import io.github.weakll.mall.common.exception.MallException;
 import io.github.weakll.mall.manager.listener.ExcelListener;
 import io.github.weakll.mall.manager.mapper.CategoryMapper;
@@ -12,6 +13,7 @@ import com.github.xiaoymin.knife4j.core.util.CollectionUtils;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -78,6 +80,10 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
+    @CacheEvict(value = {
+            CacheConstants.CATEGORY_TREE,
+            CacheConstants.CATEGORY_ONE
+    }, allEntries = true)
     public void importData(MultipartFile file) {
         try {
             //创建监听器对象，传递mapper对象
