@@ -18,7 +18,7 @@
 1. 复制 `.env.example` 为 `.env`。
 2. 修改本地数据库、Redis 和 Nacos 配置。
 3. 确认 `.env` 被 Git 忽略。
-4. 启动 Docker Compose 提供的基础设施。
+4. 执行 `docker compose --env-file .env -f deploy/docker-compose.yml up -d` 启动基础设施。
 5. 启动后端服务。
 6. 启动 H5 前端。
 

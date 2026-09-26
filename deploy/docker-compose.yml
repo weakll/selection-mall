@@ -1,0 +1,90 @@
+name: selection-mall
+
+services:
+  mysql:
+    image: mysql:8.0.30
+    container_name: selection-mall-mysql
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Shanghai
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_change_me}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-selection_mall}
+      MYSQL_USER: ${MYSQL_USERNAME:-selection_mall}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-change_me}
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./mysql/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - mysqladmin ping -h 127.0.0.1 -uroot -p$${MYSQL_ROOT_PASSWORD} --silent
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    networks:
+      - mall-network
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: selection-mall-redis
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-change_me}
+    command:
+      - sh
+      - -c
+      - redis-server --appendonly yes --requirepass "$${REDIS_PASSWORD}"
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - redis-cli -a "$${REDIS_PASSWORD}" ping | grep PONG
+      interval: 10s
+      timeout: 5s
+      retries: 20
+    networks:
+      - mall-network
+
+  nacos:
+    image: nacos/nacos-server:v2.2.1
+    container_name: selection-mall-nacos
+    restart: unless-stopped
+    environment:
+      MODE: standalone
+      PREFER_HOST_MODE: hostname
+      NACOS_AUTH_ENABLE: "false"
+      JVM_XMS: 256m
+      JVM_XMX: 512m
+      JVM_XMN: 128m
+    ports:
+      - "8848:8848"
+      - "9848:9848"
+      - "9849:9849"
+    volumes:
+      - nacos-data:/home/nacos/data
+      - nacos-logs:/home/nacos/logs
+    networks:
+      - mall-network
+
+networks:
+  mall-network:
+    name: selection-mall-network
+
+volumes:
+  mysql-data:
+    name: selection-mall-mysql-data
+  redis-data:
+    name: selection-mall-redis-data
+  nacos-data:
+    name: selection-mall-nacos-data
+  nacos-logs:
+    name: selection-mall-nacos-logs
