@@ -1,0 +1,136 @@
+/* ========== 精选商城 - 全局设计令牌 ========== */
+
+:root {
+  /* 品牌色 */
+  --mall-primary: #ff6b00;
+  --mall-primary-light: #ff8533;
+  --mall-primary-gradient: linear-gradient(135deg, #ff6b00 0%, #ff8533 100%);
+  --mall-danger: #ff4d4f;
+  --mall-success: #52c41a;
+  --mall-warning: #faad14;
+
+  /* 文字色 */
+  --text-primary: #1a1a1a;
+  --text-secondary: #666666;
+  --text-tertiary: #999999;
+  --text-white: #ffffff;
+
+  /* 背景色 */
+  --bg-page: #f5f6fa;
+  --bg-card: #ffffff;
+  --bg-hover: #fff7f0;
+
+  /* 边框与分割线 */
+  --border-color: #f0f0f0;
+  --divider: #eeeeee;
+
+  /* 阴影 */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
+
+  /* 圆角 */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+
+  /* 间距 */
+  --gap-xs: 4px;
+  --gap-sm: 8px;
+  --gap-md: 12px;
+  --gap-lg: 16px;
+  --gap-xl: 24px;
+
+  /* TabBar */
+  --tabbar-height: 56px;
+  --tabbar-bg: rgba(255, 255, 255, 0.95);
+}
+
+/* ========== 全局重置 ========== */
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  background: var(--bg-page);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ========== 通用组件类 ========== */
+.sp-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.sp-section-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sp-section-title::before {
+  content: '';
+  width: 4px;
+  height: 18px;
+  background: var(--mall-primary-gradient);
+  border-radius: 2px;
+}
+
+.sp-price {
+  color: var(--mall-primary);
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.sp-price::before {
+  content: '¥';
+  font-size: 12px;
+  margin-right: 1px;
+}
+
+.sp-btn-primary {
+  background: var(--mall-primary-gradient);
+  border: none;
+  color: white;
+  border-radius: var(--radius-xl);
+  font-weight: 600;
+}
+
+/* ========== 动画 ========== */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+/* ========== Vant 覆盖 ========== */
+.van-nav-bar {
+  background: var(--bg-card) !important;
+}
+
+.van-nav-bar__title {
+  font-weight: 700 !important;
+  color: var(--text-primary) !important;
+}
+
+.van-submit-bar__price {
+  color: var(--mall-primary) !important;
+}
+
+.van-submit-bar__button {
+  background: var(--mall-primary-gradient) !important;
+  border: none !important;
+  border-radius: var(--radius-xl) !important;
+}

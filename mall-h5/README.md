@@ -1,6 +1,10 @@
 # Mall H5
 
-H5 商城计划使用 Vue 3、Vite、Vant、Pinia、Vue Router 和 Axios。
+H5 商城使用 Vue 3、Vite、Vant、Pinia、Vue Router 和 Axios。
+
+## 当前状态
+
+源码已经迁入，依赖管理统一为 pnpm，并已通过生产构建验证。
 
 ## 主要页面
 
@@ -13,9 +17,12 @@ H5 商城计划使用 Vue 3、Vite、Vant、Pinia、Vue Router 和 Axios。
 - 收货地址
 - 登录与注册
 
-## 迁移规则
+## 本地运行
 
-- 只迁移源码和必要静态资源，不提交 `node_modules` 与构建产物。
-- API 地址通过 `VITE_API_BASE_URL` 注入。
-- 页面、组件和状态管理继续保持职责分离。
-- 依赖管理方式、构建命令和测试命令在源码迁入时统一确定。
+```bash
+pnpm install
+pnpm dev
+pnpm build
+```
+
+开发环境默认通过 Vite 代理将 `/api` 转发到 `http://127.0.0.1:8500`。生产环境如需直连其他网关，可配置 `VITE_API_BASE_URL`。

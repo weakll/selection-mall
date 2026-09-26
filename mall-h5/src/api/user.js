@@ -1,0 +1,18 @@
+import request from './request'
+
+export const login = (data) => request.post('/user/userInfo/login', data)
+export const register = (data) => request.post('/user/userInfo/register', data)
+export const getUserInfo = () => request.get('/user/userInfo/auth/getCurrentUserInfo')
+export const getAddressList = () => request.get('/user/userAddress/auth/findUserAddressList')
+export const saveAddress = (data) => request.post('/user/userAddress/auth/save', data)
+export const updateAddress = (data) => request.put('/user/userAddress/auth/updateById', data)
+export const deleteAddress = (id) => request.delete(`/user/userAddress/auth/removeById/${id}`)
+export const collect = (skuId) => request.get(`/user/userInfo/isCollect/${skuId}`)
+export const cancelCollect = (skuId) => request.get(`/user/userInfo/auth/cancelCollect/${skuId}`)
+export const isCollected = (skuId) => request.get(`/user/userInfo/auth/isCollected/${skuId}`)
+export const getCollectList = () => request.get('/user/userInfo/auth/findUserCollectList')
+export const addBrowseHistory = (skuId) => request.get(`/user/userInfo/auth/addBrowseHistory/${skuId}`)
+export const getBrowseHistoryList = () => request.get('/user/userInfo/auth/findBrowseHistoryList')
+export const clearBrowseHistory = () => request.get('/user/userInfo/auth/clearBrowseHistory')
+export const getUserCouponList = () => request.get('/user/couponInfo/auth/findUserCouponList')
+export const getCouponById = (id) => request.get(`/user/couponInfo/getById/${id}`)
