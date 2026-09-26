@@ -1,7 +1,10 @@
 package io.github.weakll.mall.product.cache;
 
 import io.github.weakll.mall.common.cache.CacheConstants;
+import io.github.weakll.mall.common.cache.LoggingCacheErrorHandler;
 import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.CachingConfigurer;
+import org.springframework.cache.interceptor.CacheErrorHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
@@ -16,7 +19,7 @@ import java.time.Duration;
 import java.util.Map;
 
 @Configuration
-public class RedisConfig {
+public class RedisConfig implements CachingConfigurer {
     @Bean
     public CacheManager cacheManager(LettuceConnectionFactory connectionFactory) {
         GenericJackson2JsonRedisSerializer genericJackson2JsonRedisSerializer = new GenericJackson2JsonRedisSerializer();
@@ -42,5 +45,10 @@ public class RedisConfig {
                 .cacheDefaults(defaultConfig.entryTtl(Duration.ofMinutes(30)))
                 .withInitialCacheConfigurations(cacheConfigurations)
                 .build();
+    }
+
+    @Override
+    public CacheErrorHandler errorHandler() {
+        return new LoggingCacheErrorHandler();
     }
 }

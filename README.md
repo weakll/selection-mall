@@ -44,6 +44,7 @@ selection-mall/
 ## 文档
 
 - [架构设计](docs/architecture.md)
+- [商品缓存一致性](docs/cache-consistency.md)
 - [开发说明](docs/development.md)
 - [开发路线图](docs/roadmap.md)
 - [后端迁移说明](backend/README.md)
