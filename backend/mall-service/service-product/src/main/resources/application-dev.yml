@@ -17,7 +17,7 @@ spring:
   datasource:
     type: com.zaxxer.hikari.HikariDataSource
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:selection_mall}?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:3307}/${MYSQL_DATABASE:selection_mall}?characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
     username: ${MYSQL_USERNAME:selection_mall}
     password: ${MYSQL_PASSWORD:change_me}
     hikari:

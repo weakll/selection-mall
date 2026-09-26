@@ -27,7 +27,7 @@ docker compose --env-file .env -f deploy/docker-compose.yml down
 
 | 服务 | 端口 |
 |:---|:---|
-| MySQL | `3306` |
+| MySQL | `3307`，容器内部仍为 `3306` |
 | Redis | `6379` |
 | Nacos HTTP | `8848` |
 | Nacos gRPC | `9848`、`9849` |
