@@ -1,5 +1,7 @@
 # 精选商城
 
+[![CI](https://github.com/weakll/selection-mall/actions/workflows/ci.yml/badge.svg)](https://github.com/weakll/selection-mall/actions/workflows/ci.yml)
+
 精选商城（Selection Mall）是一个基于 `Spring Cloud Alibaba` 和 `Vue 3` 的前后端分离微服务商城项目。
 
 ## 项目状态
