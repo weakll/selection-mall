@@ -29,8 +29,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -38,6 +42,9 @@ import java.util.List;
 @Slf4j
 @Service
 public class OrderInfoServiceImpl implements OrderInfoService {
+
+    private static final String ORDER_SUBMIT_KEY_PREFIX = "mall:order:submit:";
+    private static final String PENDING_VALUE = "PENDING";
 
     @Autowired
     private CartFeignClient cartFeignClient ;
@@ -99,56 +106,82 @@ public class OrderInfoServiceImpl implements OrderInfoService {
             throw new MallException(ResultCodeEnum.DATA_ERROR);
         }
 
-        List<SkuSaleDto> stockItems = new ArrayList<>(orderItemList.size());
-        for (OrderItem orderItem : orderItemList) {
-            ProductSku productSku = productFeignClient.getBySkuId(orderItem.getSkuId());
-            if (null == productSku
-                    || orderItem.getSkuNum() == null
-                    || orderItem.getSkuNum() <= 0) {
-                throw new MallException(ResultCodeEnum.DATA_ERROR);
-            }
-            SkuSaleDto stockItem = new SkuSaleDto();
-            stockItem.setSkuId(orderItem.getSkuId());
-            stockItem.setNum(orderItem.getSkuNum());
-            stockItems.add(stockItem);
+        String requestId = orderInfoDto.getRequestId();
+        if (!StringUtils.hasText(requestId)) {
+            throw new MallException(ResultCodeEnum.DATA_ERROR);
         }
 
-        // 构建订单数据，保存订单
         UserInfo userInfo = AuthContextUtil.getUserInfo();
-        OrderInfo orderInfo = new OrderInfo();
-        //订单编号
-        orderInfo.setOrderNo(String.valueOf(System.currentTimeMillis()));
-        //用户id
-        orderInfo.setUserId(userInfo.getId());
-        //用户昵称
-        orderInfo.setNickName(userInfo.getNickName());
-        //用户收货地址信息
-        UserAddress userAddress = userFeignClient.getUserAddress(orderInfoDto.getUserAddressId());
-        orderInfo.setReceiverName(userAddress.getName());
-        orderInfo.setReceiverPhone(userAddress.getPhone());
-        orderInfo.setReceiverTagName(userAddress.getTagName());
-        orderInfo.setReceiverProvince(userAddress.getProvinceCode());
-        orderInfo.setReceiverCity(userAddress.getCityCode());
-        orderInfo.setReceiverDistrict(userAddress.getDistrictCode());
-        orderInfo.setReceiverAddress(userAddress.getFullAddress());
-        //订单金额
-        BigDecimal totalAmount = new BigDecimal(0);
-        for (OrderItem orderItem : orderItemList) {
-            totalAmount = totalAmount.add(orderItem.getSkuPrice().multiply(new BigDecimal(orderItem.getSkuNum())));
-        }
-        orderInfo.setTotalAmount(totalAmount);
-        orderInfo.setCouponAmount(new BigDecimal(0));
-        orderInfo.setOriginalTotalAmount(totalAmount);
-        orderInfo.setFeightFee(orderInfoDto.getFeightFee());
-        orderInfo.setPayType(2);
-        orderInfo.setOrderStatus(0);
-
-        Boolean deducted = productFeignClient.deductStock(stockItems);
-        if (!Boolean.TRUE.equals(deducted)) {
-            throw new MallException(ResultCodeEnum.STOCK_LESS);
+        Long userId = userInfo.getId();
+        String idempotencyKey = ORDER_SUBMIT_KEY_PREFIX + userId + ":" + requestId;
+        Boolean acquired = redisTemplate.opsForValue().setIfAbsent(
+                idempotencyKey,
+                PENDING_VALUE,
+                Duration.ofMinutes(2)
+        );
+        if (!Boolean.TRUE.equals(acquired)) {
+            String existingOrderId = redisTemplate.opsForValue().get(idempotencyKey);
+            if (existingOrderId != null && !PENDING_VALUE.equals(existingOrderId)) {
+                try {
+                    return Long.valueOf(existingOrderId);
+                } catch (NumberFormatException exception) {
+                    throw new MallException(ResultCodeEnum.DATA_ERROR);
+                }
+            }
+            throw new MallException(ResultCodeEnum.REPEAT_SUBMIT);
         }
 
+        List<SkuSaleDto> stockItems = new ArrayList<>(orderItemList.size());
+        boolean stockDeducted = false;
         try {
+            for (OrderItem orderItem : orderItemList) {
+                ProductSku productSku = productFeignClient.getBySkuId(orderItem.getSkuId());
+                if (null == productSku
+                        || orderItem.getSkuNum() == null
+                        || orderItem.getSkuNum() <= 0) {
+                    throw new MallException(ResultCodeEnum.DATA_ERROR);
+                }
+                SkuSaleDto stockItem = new SkuSaleDto();
+                stockItem.setSkuId(orderItem.getSkuId());
+                stockItem.setNum(orderItem.getSkuNum());
+                stockItems.add(stockItem);
+            }
+
+            // 构建订单数据，保存订单
+            OrderInfo orderInfo = new OrderInfo();
+            //订单编号
+            orderInfo.setOrderNo(String.valueOf(System.currentTimeMillis()));
+            //用户id
+            orderInfo.setUserId(userId);
+            //用户昵称
+            orderInfo.setNickName(userInfo.getNickName());
+            //用户收货地址信息
+            UserAddress userAddress = userFeignClient.getUserAddress(orderInfoDto.getUserAddressId());
+            orderInfo.setReceiverName(userAddress.getName());
+            orderInfo.setReceiverPhone(userAddress.getPhone());
+            orderInfo.setReceiverTagName(userAddress.getTagName());
+            orderInfo.setReceiverProvince(userAddress.getProvinceCode());
+            orderInfo.setReceiverCity(userAddress.getCityCode());
+            orderInfo.setReceiverDistrict(userAddress.getDistrictCode());
+            orderInfo.setReceiverAddress(userAddress.getFullAddress());
+            //订单金额
+            BigDecimal totalAmount = new BigDecimal(0);
+            for (OrderItem orderItem : orderItemList) {
+                totalAmount = totalAmount.add(orderItem.getSkuPrice().multiply(new BigDecimal(orderItem.getSkuNum())));
+            }
+            orderInfo.setTotalAmount(totalAmount);
+            orderInfo.setCouponAmount(new BigDecimal(0));
+            orderInfo.setOriginalTotalAmount(totalAmount);
+            orderInfo.setFeightFee(orderInfoDto.getFeightFee());
+            orderInfo.setPayType(2);
+            orderInfo.setOrderStatus(0);
+
+            Boolean deducted = productFeignClient.deductStock(stockItems);
+            if (!Boolean.TRUE.equals(deducted)) {
+                throw new MallException(ResultCodeEnum.STOCK_LESS);
+            }
+            stockDeducted = true;
+
             orderInfoMapper.save(orderInfo);
 
             //保存订单明细
@@ -164,12 +197,16 @@ public class OrderInfoServiceImpl implements OrderInfoService {
             orderLog.setNote("提交订单");
             orderLogMapper.save(orderLog);
 
-            clearCheckedCart(userInfo.getId());
+            clearCheckedCart(userId);
+            registerIdempotencyResult(idempotencyKey, orderInfo.getId());
 
             // 6、返回订单id
             return orderInfo.getId();
         } catch (RuntimeException | Error exception) {
-            restoreReservedStock(stockItems, exception);
+            if (stockDeducted) {
+                restoreReservedStock(stockItems, exception);
+            }
+            releaseOrderSubmitKey(idempotencyKey);
             throw exception;
         }
     }
@@ -191,6 +228,46 @@ public class OrderInfoServiceImpl implements OrderInfoService {
                     ));
         } catch (Exception exception) {
             log.warn("Failed to clear checked cart items. userId={}", userId, exception);
+        }
+    }
+
+    private void registerIdempotencyResult(String idempotencyKey, Long orderId) {
+        Runnable complete = () -> {
+            try {
+                redisTemplate.opsForValue().set(
+                        idempotencyKey,
+                        String.valueOf(orderId),
+                        Duration.ofHours(24)
+                );
+            } catch (Exception exception) {
+                log.error("Failed to persist order idempotency result. key={}", idempotencyKey, exception);
+            }
+        };
+
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    complete.run();
+                }
+
+                @Override
+                public void afterCompletion(int status) {
+                    if (status != TransactionSynchronization.STATUS_COMMITTED) {
+                        releaseOrderSubmitKey(idempotencyKey);
+                    }
+                }
+            });
+        } else {
+            complete.run();
+        }
+    }
+
+    private void releaseOrderSubmitKey(String idempotencyKey) {
+        try {
+            redisTemplate.delete(idempotencyKey);
+        } catch (Exception exception) {
+            log.warn("Failed to release order idempotency key. key={}", idempotencyKey, exception);
         }
     }
 

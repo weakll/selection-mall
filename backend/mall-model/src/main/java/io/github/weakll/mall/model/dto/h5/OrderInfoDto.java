@@ -9,6 +9,9 @@ import java.util.List;
 @Data
 public class OrderInfoDto {
 
+    //客户端订单提交幂等键
+    private String requestId;
+
     //送货地址id
     private Long userAddressId;
 

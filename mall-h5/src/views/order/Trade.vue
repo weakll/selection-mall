@@ -83,6 +83,7 @@
     <van-submit-bar
       :price="payAmount * 100"
       button-text="提交订单"
+      :loading="submitting"
       @submit="onSubmit"
       class="trade-submit"
     >
@@ -143,8 +144,15 @@ const couponUsers = ref([])
 const couponMap = ref(new Map())
 const selectedCoupon = ref(null)
 const showCouponSheet = ref(false)
+const submitting = ref(false)
 const token = localStorage.getItem('token')
 const isLogin = !!token
+const submitRequestId = createRequestId()
+
+function createRequestId() {
+  return globalThis.crypto?.randomUUID?.()
+    || `${Date.now()}-${Math.random().toString(36).slice(2)}`
+}
 
 // 计算商品原始总额
 const originalAmount = computed(() => {
@@ -240,8 +248,13 @@ const onSubmit = async () => {
     showToast('请选择收货地址')
     return
   }
+  if (submitting.value) {
+    return
+  }
+  submitting.value = true
   try {
     const params = {
+      requestId: submitRequestId,
       orderItemList: trade.value.orderItemList,
       userAddressId: address.value.id,
       feightFee: 0,
@@ -249,11 +262,13 @@ const onSubmit = async () => {
       couponId: selectedCoupon.value?.couponId || null,
       couponAmount: couponDiscount.value || 0,
     }
-    const orderId = await submitOrder(params)
+    await submitOrder(params)
     showToast({ message: '下单成功', icon: 'success' })
     router.replace('/order/list')
   } catch (e) {
     console.error('提交订单失败:', e)
+  } finally {
+    submitting.value = false
   }
 }
 </script>

@@ -17,6 +17,8 @@ public enum ResultCodeEnum {
 
     STOCK_LESS( 219, "库存不足"),
 
+    REPEAT_SUBMIT(220, "订单正在处理，请勿重复提交"),
+
     ;
 
     private Integer code ;      // 业务状态码
