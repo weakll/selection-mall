@@ -335,15 +335,20 @@ public class OrderInfoServiceImpl implements OrderInfoService {
 
     @Transactional
     @Override
-    public void updateOrderStatus(String orderNo, Integer orderStatus) {
-        // 更新订单状态
-        OrderInfo orderInfo = orderInfoMapper.getByOrderNo(orderNo);
-        orderInfo.setOrderStatus(1);
-        orderInfo.setPayType(orderStatus);
-        orderInfo.setPaymentTime(new Date());
-        orderInfoMapper.updateById(orderInfo);
+    public void updateOrderStatus(String orderNo, Integer payType) {
+        int affectedRows = orderInfoMapper.markPaid(orderNo, payType, new Date());
+        if (affectedRows != 1) {
+            OrderInfo existing = orderInfoMapper.getByOrderNo(orderNo);
+            if (existing == null) {
+                throw new MallException(ResultCodeEnum.DATA_ERROR);
+            }
+            if (Integer.valueOf(1).equals(existing.getOrderStatus())) {
+                return;
+            }
+            throw new MallException(ResultCodeEnum.DATA_ERROR);
+        }
 
-        // 记录日志
+        OrderInfo orderInfo = orderInfoMapper.getByOrderNo(orderNo);
         OrderLog orderLog = new OrderLog();
         orderLog.setOrderId(orderInfo.getId());
         orderLog.setProcessStatus(1);

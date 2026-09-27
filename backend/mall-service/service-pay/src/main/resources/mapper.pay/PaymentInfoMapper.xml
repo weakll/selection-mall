@@ -78,4 +78,16 @@
         id = #{id}
     </update>
 
+    <update id="markPaid">
+        update payment_info
+        set payment_status = 1,
+            out_trade_no = #{outTradeNo},
+            callback_time = #{callbackTime},
+            callback_content = #{callbackContent},
+            update_time = now()
+        where order_no = #{orderNo}
+          and payment_status = 0
+          and is_deleted = 0
+    </update>
+
 </mapper>

@@ -169,4 +169,16 @@
         where
         id = #{id}
     </update>
+
+    <update id="markPaid">
+        update order_info
+        set order_status = 1,
+            pay_type = #{payType},
+            payment_time = #{paymentTime},
+            update_time = now()
+        where order_no = #{orderNo}
+          and order_status = 0
+          and is_deleted = 0
+    </update>
+
 </mapper>

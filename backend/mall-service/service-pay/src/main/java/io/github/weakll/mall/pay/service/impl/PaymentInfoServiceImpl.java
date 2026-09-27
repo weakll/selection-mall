@@ -1,18 +1,21 @@
 package io.github.weakll.mall.pay.service.impl;
 
 import com.alibaba.fastjson.JSON;
+import io.github.weakll.mall.common.exception.MallException;
 import io.github.weakll.mall.feign.order.OrderFeignClient;
 import io.github.weakll.mall.feign.product.ProductFeignClient;
 import io.github.weakll.mall.model.dto.product.SkuSaleDto;
 import io.github.weakll.mall.model.entity.order.OrderInfo;
 import io.github.weakll.mall.model.entity.order.OrderItem;
 import io.github.weakll.mall.model.entity.pay.PaymentInfo;
+import io.github.weakll.mall.model.vo.common.ResultCodeEnum;
 import io.github.weakll.mall.pay.mapper.PaymentInfoMapper;
 import io.github.weakll.mall.pay.service.PaymentInfoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 import java.util.Date;
 import java.util.List;
@@ -56,24 +59,36 @@ public class PaymentInfoServiceImpl implements PaymentInfoService {
     @Transactional
     @Override
     public void updatePaymentStatus(Map<String, String> map, Integer payType) {
-        // 1、查询PaymentInfo
-        PaymentInfo paymentInfo = paymentInfoMapper.getByOrderNo(map.get("out_trade_no"));
-        if (paymentInfo.getPaymentStatus() == 1) {
+        String orderNo = map.get("out_trade_no");
+        if (!StringUtils.hasText(orderNo)) {
+            throw new MallException(ResultCodeEnum.DATA_ERROR);
+        }
+
+        PaymentInfo paymentInfo = paymentInfoMapper.getByOrderNo(orderNo);
+        if (paymentInfo == null) {
+            throw new MallException(ResultCodeEnum.DATA_ERROR);
+        }
+        if (Integer.valueOf(1).equals(paymentInfo.getPaymentStatus())) {
             return;
         }
 
-        // 2、更新支付信息
-        paymentInfo.setPaymentStatus(1);
-        paymentInfo.setOutTradeNo(map.get("trade_no"));
-        paymentInfo.setCallbackTime(new Date());
-        paymentInfo.setCallbackContent(JSON.toJSONString(map));
-        paymentInfoMapper.updateById(paymentInfo);
+        int affectedRows = paymentInfoMapper.markPaid(
+                orderNo,
+                map.get("trade_no"),
+                new Date(),
+                JSON.toJSONString(map)
+        );
+        if (affectedRows != 1) {
+            PaymentInfo latest = paymentInfoMapper.getByOrderNo(orderNo);
+            if (latest != null && Integer.valueOf(1).equals(latest.getPaymentStatus())) {
+                return;
+            }
+            throw new MallException(ResultCodeEnum.DATA_ERROR);
+        }
 
-        // 3、更新订单的支付状态
-        orderFeignClient.updateOrderStatus(paymentInfo.getOrderNo(), payType);
+        orderFeignClient.updateOrderStatus(orderNo, payType);
 
-        // 4、更新商品销量
-        OrderInfo orderInfo = orderFeignClient.getOrderInfoByOrderNo(paymentInfo.getOrderNo()).getData();
+        OrderInfo orderInfo = orderFeignClient.getOrderInfoByOrderNo(orderNo).getData();
         if (!CollectionUtils.isEmpty(orderInfo.getOrderItemList())) {
             List<SkuSaleDto> skuSaleDtoList = orderInfo.getOrderItemList().stream().map(item -> {
                 SkuSaleDto skuSaleDto = new SkuSaleDto();
