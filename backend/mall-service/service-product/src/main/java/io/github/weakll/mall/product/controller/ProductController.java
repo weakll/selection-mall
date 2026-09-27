@@ -1,7 +1,6 @@
 package io.github.weakll.mall.product.controller;
 
 import io.github.weakll.mall.model.dto.h5.ProductSkuDto;
-import io.github.weakll.mall.model.dto.product.SkuSaleDto;
 import io.github.weakll.mall.model.entity.product.ProductSku;
 import io.github.weakll.mall.model.vo.common.Result;
 import io.github.weakll.mall.model.vo.common.ResultCodeEnum;
@@ -45,10 +44,5 @@ public class ProductController {
     public ProductSku getBySkuId(@Parameter(name = "skuId", description = "商品skuId", required = true) @PathVariable Long skuId) {
         ProductSku productSku = productService.getBySkuId(skuId);
         return productSku;
-    }
-    @Operation(summary = "更新商品sku销量")
-    @PostMapping("updateSkuSaleNum")
-    public Boolean updateSkuSaleNum(@RequestBody List<SkuSaleDto> skuSaleDtoList) {
-        return productService.updateSkuSaleNum(skuSaleDtoList);
     }
 }

@@ -17,6 +17,12 @@ public interface ProductFeignClient {
     @GetMapping("/api/product/getBySkuId/{skuId}")
     public abstract ProductSku getBySkuId(@PathVariable Long skuId) ;
 
-    @PostMapping("/api/product/updateSkuSaleNum")
-    void updateSkuSaleNum(@RequestBody List<SkuSaleDto> skuSaleDtoList);
+    @PostMapping("/internal/product/updateSkuSaleNum")
+    Boolean updateSkuSaleNum(@RequestBody List<SkuSaleDto> skuSaleDtoList);
+
+    @PostMapping("/internal/product/deductStock")
+    Boolean deductStock(@RequestBody List<SkuSaleDto> skuSaleDtoList);
+
+    @PostMapping("/internal/product/restoreStock")
+    Boolean restoreStock(@RequestBody List<SkuSaleDto> skuSaleDtoList);
 }

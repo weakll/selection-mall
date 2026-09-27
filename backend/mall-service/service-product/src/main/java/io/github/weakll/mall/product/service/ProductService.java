@@ -18,4 +18,8 @@ public interface ProductService {
     ProductSku getBySkuId(Long skuId);
 
     Boolean updateSkuSaleNum(List<SkuSaleDto> skuSaleDtoList);
+
+    Boolean deductStock(List<SkuSaleDto> skuSaleDtoList);
+
+    Boolean restoreStock(List<SkuSaleDto> skuSaleDtoList);
 }

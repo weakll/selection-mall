@@ -75,6 +75,27 @@
         </if>
     </select>
     <update id="updateSale" >
-        update product_sku set sale_num = sale_num + #{num}, stock_num = stock_num - #{num}, update_time =  now() where id = #{skuId}
+        update product_sku
+        set sale_num = sale_num + #{num},
+            update_time = now()
+        where id = #{skuId}
+          and is_deleted = 0
+    </update>
+
+    <update id="deductStock">
+        update product_sku
+        set stock_num = stock_num - #{num},
+            update_time = now()
+        where id = #{skuId}
+          and stock_num >= #{num}
+          and is_deleted = 0
+    </update>
+
+    <update id="restoreStock">
+        update product_sku
+        set stock_num = stock_num + #{num},
+            update_time = now()
+        where id = #{skuId}
+          and is_deleted = 0
     </update>
 </mapper>

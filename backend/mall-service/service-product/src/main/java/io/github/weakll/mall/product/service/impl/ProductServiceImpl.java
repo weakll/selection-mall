@@ -2,6 +2,7 @@ package io.github.weakll.mall.product.service.impl;
 
 import com.alibaba.fastjson.JSON;
 
+import io.github.weakll.mall.common.exception.MallException;
 import io.github.weakll.mall.common.cache.CacheConstants;
 import io.github.weakll.mall.model.dto.h5.ProductSkuDto;
 import io.github.weakll.mall.model.dto.product.SkuSaleDto;
@@ -9,6 +10,7 @@ import io.github.weakll.mall.model.entity.product.Product;
 import io.github.weakll.mall.model.entity.product.ProductDetails;
 import io.github.weakll.mall.model.entity.product.ProductSku;
 import io.github.weakll.mall.model.vo.h5.ProductItemVo;
+import io.github.weakll.mall.model.vo.common.ResultCodeEnum;
 import io.github.weakll.mall.product.mapper.ProductDetailsMapper;
 import io.github.weakll.mall.product.mapper.ProductMapper;
 import io.github.weakll.mall.product.mapper.ProductSkuMapper;
@@ -17,6 +19,7 @@ import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import com.github.xiaoymin.knife4j.core.util.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,10 +53,49 @@ public class ProductServiceImpl implements ProductService {
 
     @Transactional
     @Override
+    @CacheEvict(value = CacheConstants.PRODUCT_ITEM, allEntries = true)
     public Boolean updateSkuSaleNum(List<SkuSaleDto> skuSaleDtoList) {
         if(!CollectionUtils.isEmpty(skuSaleDtoList)) {
             for(SkuSaleDto skuSaleDto : skuSaleDtoList) {
                 productSkuMapper.updateSale(skuSaleDto.getSkuId(), skuSaleDto.getNum());
+            }
+        }
+        return true;
+    }
+
+    @Transactional
+    @Override
+    @CacheEvict(value = CacheConstants.PRODUCT_ITEM, allEntries = true)
+    public Boolean deductStock(List<SkuSaleDto> skuSaleDtoList) {
+        if (!CollectionUtils.isEmpty(skuSaleDtoList)) {
+            for (SkuSaleDto skuSaleDto : skuSaleDtoList) {
+                validateSkuSale(skuSaleDto);
+                int affectedRows = productSkuMapper.deductStock(
+                        skuSaleDto.getSkuId(),
+                        skuSaleDto.getNum()
+                );
+                if (affectedRows != 1) {
+                    throw new MallException(ResultCodeEnum.STOCK_LESS);
+                }
+            }
+        }
+        return true;
+    }
+
+    @Transactional
+    @Override
+    @CacheEvict(value = CacheConstants.PRODUCT_ITEM, allEntries = true)
+    public Boolean restoreStock(List<SkuSaleDto> skuSaleDtoList) {
+        if (!CollectionUtils.isEmpty(skuSaleDtoList)) {
+            for (SkuSaleDto skuSaleDto : skuSaleDtoList) {
+                validateSkuSale(skuSaleDto);
+                int affectedRows = productSkuMapper.restoreStock(
+                        skuSaleDto.getSkuId(),
+                        skuSaleDto.getNum()
+                );
+                if (affectedRows != 1) {
+                    throw new MallException(ResultCodeEnum.DATA_ERROR);
+                }
             }
         }
         return true;
@@ -103,5 +145,13 @@ public class ProductServiceImpl implements ProductService {
         return productItemVo;
     }
 
+    private void validateSkuSale(SkuSaleDto skuSaleDto) {
+        if (skuSaleDto == null
+                || skuSaleDto.getSkuId() == null
+                || skuSaleDto.getNum() == null
+                || skuSaleDto.getNum() <= 0) {
+            throw new MallException(ResultCodeEnum.DATA_ERROR);
+        }
+    }
 
 }

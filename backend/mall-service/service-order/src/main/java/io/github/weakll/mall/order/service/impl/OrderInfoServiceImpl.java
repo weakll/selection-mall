@@ -6,6 +6,7 @@ import io.github.weakll.mall.feign.cart.CartFeignClient;
 import io.github.weakll.mall.feign.product.ProductFeignClient;
 import io.github.weakll.mall.feign.user.UserFeignClient;
 import io.github.weakll.mall.model.dto.h5.OrderInfoDto;
+import io.github.weakll.mall.model.dto.product.SkuSaleDto;
 import io.github.weakll.mall.model.entity.h5.CartInfo;
 import io.github.weakll.mall.model.entity.order.OrderInfo;
 import io.github.weakll.mall.model.entity.order.OrderItem;
@@ -23,6 +24,7 @@ import io.github.weakll.mall.utils.AuthContextUtil;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import com.github.xiaoymin.knife4j.core.util.CollectionUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -33,6 +35,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+@Slf4j
 @Service
 public class OrderInfoServiceImpl implements OrderInfoService {
 
@@ -96,15 +99,18 @@ public class OrderInfoServiceImpl implements OrderInfoService {
             throw new MallException(ResultCodeEnum.DATA_ERROR);
         }
 
+        List<SkuSaleDto> stockItems = new ArrayList<>(orderItemList.size());
         for (OrderItem orderItem : orderItemList) {
             ProductSku productSku = productFeignClient.getBySkuId(orderItem.getSkuId());
-            if(null == productSku) {
+            if (null == productSku
+                    || orderItem.getSkuNum() == null
+                    || orderItem.getSkuNum() <= 0) {
                 throw new MallException(ResultCodeEnum.DATA_ERROR);
             }
-            //校验库存
-            if(orderItem.getSkuNum().intValue() > productSku.getStockNum().intValue()) {
-                throw new MallException(ResultCodeEnum.STOCK_LESS);
-            }
+            SkuSaleDto stockItem = new SkuSaleDto();
+            stockItem.setSkuId(orderItem.getSkuId());
+            stockItem.setNum(orderItem.getSkuNum());
+            stockItems.add(stockItem);
         }
 
         // 构建订单数据，保存订单
@@ -136,58 +142,68 @@ public class OrderInfoServiceImpl implements OrderInfoService {
         orderInfo.setFeightFee(orderInfoDto.getFeightFee());
         orderInfo.setPayType(2);
         orderInfo.setOrderStatus(0);
-        orderInfoMapper.save(orderInfo);
 
-        //保存订单明细
-        for (OrderItem orderItem : orderItemList) {
-            orderItem.setOrderId(orderInfo.getId());
-            orderItemMapper.save(orderItem);
+        Boolean deducted = productFeignClient.deductStock(stockItems);
+        if (!Boolean.TRUE.equals(deducted)) {
+            throw new MallException(ResultCodeEnum.STOCK_LESS);
         }
 
-        //记录日志
-        OrderLog orderLog = new OrderLog();
-        orderLog.setOrderId(orderInfo.getId());
-        orderLog.setProcessStatus(0);
-        orderLog.setNote("提交订单");
-        orderLogMapper.save(orderLog);
-
-        // 清空购物车：由于 service-cart 接口返回 404，改为直接操作 Redis
         try {
-            System.out.println("========== 开始清空购物车 ==========");
-            Long userId = AuthContextUtil.getUserInfo().getId();
-            System.out.println("当前用户ID: " + userId);
+            orderInfoMapper.save(orderInfo);
 
-            String cartKey = "user:cart:" + userId;
-            System.out.println("购物车Key: " + cartKey);
-
-            List<Object> objectList = redisTemplate.opsForHash().values(cartKey);
-            System.out.println("购物车商品总数: " + (objectList == null ? 0 : objectList.size()));
-
-            if (!CollectionUtils.isEmpty(objectList)) {
-                long deletedCount = objectList.stream()
-                    .map(cartInfoJSON -> JSON.parseObject(cartInfoJSON.toString(), CartInfo.class))
-                    .filter(cartInfo -> {
-                        System.out.println("检查商品: " + cartInfo.getSkuName() + ", isChecked=" + cartInfo.getIsChecked());
-                        return cartInfo.getIsChecked() == 1;
-                    })
-                    .peek(cartInfo -> System.out.println("删除选中商品: " + cartInfo.getSkuName()))
-                    .mapToLong(cartInfo -> {
-                        redisTemplate.opsForHash().delete(cartKey, String.valueOf(cartInfo.getSkuId()));
-                        return 1;
-                    })
-                    .sum();
-                System.out.println("成功删除 " + deletedCount + " 个选中的商品");
-            } else {
-                System.out.println("购物车为空，无需删除");
+            //保存订单明细
+            for (OrderItem orderItem : orderItemList) {
+                orderItem.setOrderId(orderInfo.getId());
+                orderItemMapper.save(orderItem);
             }
-            System.out.println("========== 购物车清空完成 ==========");
-        } catch (Exception e) {
-            System.err.println("清空购物车失败: " + e.getMessage());
-            e.printStackTrace();
-        }
 
-        // 6、返回订单id
-        return orderInfo.getId();
+            //记录日志
+            OrderLog orderLog = new OrderLog();
+            orderLog.setOrderId(orderInfo.getId());
+            orderLog.setProcessStatus(0);
+            orderLog.setNote("提交订单");
+            orderLogMapper.save(orderLog);
+
+            clearCheckedCart(userInfo.getId());
+
+            // 6、返回订单id
+            return orderInfo.getId();
+        } catch (RuntimeException | Error exception) {
+            restoreReservedStock(stockItems, exception);
+            throw exception;
+        }
+    }
+
+    private void clearCheckedCart(Long userId) {
+        try {
+            String cartKey = "user:cart:" + userId;
+            List<Object> objectList = redisTemplate.opsForHash().values(cartKey);
+            if (CollectionUtils.isEmpty(objectList)) {
+                return;
+            }
+
+            objectList.stream()
+                    .map(cartInfoJSON -> JSON.parseObject(cartInfoJSON.toString(), CartInfo.class))
+                    .filter(cartInfo -> Integer.valueOf(1).equals(cartInfo.getIsChecked()))
+                    .forEach(cartInfo -> redisTemplate.opsForHash().delete(
+                            cartKey,
+                            String.valueOf(cartInfo.getSkuId())
+                    ));
+        } catch (Exception exception) {
+            log.warn("Failed to clear checked cart items. userId={}", userId, exception);
+        }
+    }
+
+    private void restoreReservedStock(List<SkuSaleDto> stockItems, Throwable cause) {
+        try {
+            Boolean restored = productFeignClient.restoreStock(stockItems);
+            if (!Boolean.TRUE.equals(restored)) {
+                log.error("Product service rejected stock restoration. items={}", stockItems, cause);
+            }
+        } catch (Exception restoreException) {
+            log.error("Failed to restore reserved stock after order persistence failure. items={}",
+                    stockItems, restoreException);
+        }
     }
 
     @Override
