@@ -19,4 +19,6 @@ public interface OrderInfoService {
     OrderInfo getByOrderNo(String orderNo) ;
 
     void updateOrderStatus(String orderNo, Integer orderStatus);
+
+    void cancelOrder(String orderNo);
 }

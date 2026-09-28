@@ -72,4 +72,11 @@ public class OrderInfoController {
         orderInfoService.updateOrderStatus(orderNo, orderStatus);
         return Result.build(null, ResultCodeEnum.SUCCESS);
     }
+
+    @Operation(summary = "取消待付款订单")
+    @PostMapping("auth/cancel/{orderNo}")
+    public Result<Void> cancel(@PathVariable String orderNo) {
+        orderInfoService.cancelOrder(orderNo);
+        return Result.build(null, ResultCodeEnum.SUCCESS);
+    }
 }

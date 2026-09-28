@@ -181,4 +181,16 @@
           and is_deleted = 0
     </update>
 
+    <update id="cancelPendingOrder">
+        update order_info
+        set order_status = -1,
+            cancel_reason = #{cancelReason},
+            cancel_time = #{cancelTime},
+            update_time = now()
+        where order_no = #{orderNo}
+          and user_id = #{userId}
+          and order_status = 0
+          and is_deleted = 0
+    </update>
+
 </mapper>

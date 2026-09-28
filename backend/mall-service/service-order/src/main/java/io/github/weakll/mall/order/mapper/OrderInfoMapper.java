@@ -23,4 +23,9 @@ public interface OrderInfoMapper {
             @Param("payType") Integer payType,
             @Param("paymentTime") Date paymentTime
     );
+
+    int cancelPendingOrder(@Param("orderNo") String orderNo,
+                           @Param("userId") Long userId,
+                           @Param("cancelReason") String cancelReason,
+                           @Param("cancelTime") Date cancelTime);
 }

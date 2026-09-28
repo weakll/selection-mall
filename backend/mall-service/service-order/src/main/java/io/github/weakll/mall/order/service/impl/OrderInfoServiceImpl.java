@@ -38,6 +38,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -354,6 +355,35 @@ public class OrderInfoServiceImpl implements OrderInfoService {
         orderLog.setProcessStatus(1);
         orderLog.setNote("支付宝支付成功");
         orderLogMapper.save(orderLog);
+    }
+
+    @Transactional
+    @Override
+    public void cancelOrder(String orderNo) {
+        UserInfo userInfo = AuthContextUtil.getUserInfo();
+        if (userInfo == null || userInfo.getId() == null) {
+            throw new MallException(ResultCodeEnum.LOGIN_AUTH);
+        }
+        OrderInfo orderInfo = orderInfoMapper.getByOrderNo(orderNo);
+        if (orderInfo == null || !userInfo.getId().equals(orderInfo.getUserId())) {
+            throw new MallException(ResultCodeEnum.DATA_ERROR);
+        }
+        if (!Integer.valueOf(0).equals(orderInfo.getOrderStatus())) {
+            throw new MallException(ResultCodeEnum.DATA_ERROR);
+        }
+        int affectedRows = orderInfoMapper.cancelPendingOrder(orderNo, userInfo.getId(), "用户取消订单", new Date());
+        if (affectedRows != 1) {
+            throw new MallException(ResultCodeEnum.DATA_ERROR);
+        }
+        List<SkuSaleDto> stockItems = orderItemMapper.findByOrderId(orderInfo.getId()).stream().map(item -> {
+            SkuSaleDto stockItem = new SkuSaleDto();
+            stockItem.setSkuId(item.getSkuId());
+            stockItem.setNum(item.getSkuNum());
+            return stockItem;
+        }).collect(Collectors.toList());
+        if (!stockItems.isEmpty() && !Boolean.TRUE.equals(productFeignClient.restoreStock(stockItems))) {
+            throw new MallException(ResultCodeEnum.SYSTEM_ERROR);
+        }
     }
 
 }

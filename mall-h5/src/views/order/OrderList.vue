@@ -51,7 +51,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { showToast } from 'vant'
-import { getOrderList, directPay } from '../../api/order.js'
+import { getOrderList, directPay, cancelOrder as cancelOrderApi } from '../../api/order.js'
 
 const active = ref(0)
 const list = ref([])
@@ -87,9 +87,12 @@ const pay = async (orderNo) => {
   } catch (e) {}
 }
 
-const cancelOrder = (orderNo) => {
-  showToast('已取消')
-  // 实际调用取消接口
+const cancelOrder = async (orderNo) => {
+  try {
+    await cancelOrderApi(orderNo)
+    showToast({ message: '订单已取消', icon: 'success' })
+    await load()
+  } catch (e) {}
 }
 
 onMounted(() => load())
