@@ -46,3 +46,16 @@ docker compose --env-file .env -f deploy/docker-compose.yml down
 - 初始化脚本使用 `CREATE TABLE IF NOT EXISTS`，不会删除或重建现有表；已有表的结构变更需要单独编写迁移。
 - 真实环境必须修改 `.env` 中的默认密码。
 - Compose 文件基于 Nacos Client `2.2.1`，服务端固定为 `nacos/nacos-server:v2.2.1`。
+
+## 生产化部署
+
+生产 Compose 会构建 H5、网关和业务服务镜像。先完成后端打包，再在仓库根目录执行：
+
+```powershell
+Copy-Item deploy/.env.example deploy/.env
+docker compose --env-file deploy/.env -f deploy/docker-compose.prod.yml build
+docker compose --env-file deploy/.env -f deploy/docker-compose.prod.yml up -d
+docker compose --env-file deploy/.env -f deploy/docker-compose.prod.yml ps
+```
+
+访问 `http://服务器地址/` 使用 H5，`/api/` 请求由 Nginx 转发到网关。生产环境必须替换 `.env` 中的密码和 `FRONTEND_URL`，并在云安全组仅开放 `80` 或 `443`。
