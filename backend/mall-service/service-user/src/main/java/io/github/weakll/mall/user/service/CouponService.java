@@ -16,4 +16,6 @@ public interface CouponService {
     List<CouponInfo> findAllPublished();
 
     CouponInfo getById(Long id);
+
+    void claimCoupon(Long couponId);
 }

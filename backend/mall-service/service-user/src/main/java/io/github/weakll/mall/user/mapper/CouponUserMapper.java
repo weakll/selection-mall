@@ -13,6 +13,8 @@ public interface CouponUserMapper {
 
     CouponUser findByUserIdAndCouponId(@Param("userId") Long userId, @Param("couponId") Long couponId);
 
+    int countByUserIdAndCouponId(@Param("userId") Long userId, @Param("couponId") Long couponId);
+
     void save(CouponUser couponUser);
 
     void updateUsed(@Param("id") Long id, @Param("orderId") Long orderId);

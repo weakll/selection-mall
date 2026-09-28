@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -40,5 +41,12 @@ public class CouponController {
     @GetMapping("getById/{id}")
     public Result<CouponInfo> getById(@PathVariable Long id) {
         return Result.build(couponService.getById(id), ResultCodeEnum.SUCCESS);
+    }
+
+    @Operation(summary = "领取优惠券")
+    @PostMapping("auth/claim/{id}")
+    public Result<Void> claim(@PathVariable Long id) {
+        couponService.claimCoupon(id);
+        return Result.build(null, ResultCodeEnum.SUCCESS);
     }
 }

@@ -18,7 +18,7 @@ class CouponMapperXmlTest {
     void registersEveryCouponInfoMapperStatement() throws IOException {
         Configuration configuration = loadMapper("mapper/user/CouponInfoMapper.xml");
 
-        assertAll(List.of("findAllPublished", "getById", "save", "updateReceiveCount")
+        assertAll(List.of("findAllPublished", "getById", "getByIdForUpdate", "save", "updateReceiveCount")
                 .stream()
                 .map(statement -> () -> assertTrue(configuration.hasStatement(
                         "io.github.weakll.mall.user.mapper.CouponInfoMapper." + statement))));
@@ -28,7 +28,7 @@ class CouponMapperXmlTest {
     void registersEveryCouponUserMapperStatement() throws IOException {
         Configuration configuration = loadMapper("mapper/user/CouponUserMapper.xml");
 
-        assertAll(List.of("findByUserId", "findByUserIdAndCouponId", "save", "updateUsed")
+        assertAll(List.of("findByUserId", "findByUserIdAndCouponId", "countByUserIdAndCouponId", "save", "updateUsed")
                 .stream()
                 .map(statement -> () -> assertTrue(configuration.hasStatement(
                         "io.github.weakll.mall.user.mapper.CouponUserMapper." + statement))));

@@ -28,6 +28,14 @@
         limit 1
     </select>
 
+    <select id="countByUserIdAndCouponId" resultType="int">
+        select count(1)
+        from coupon_user
+        where user_id = #{userId}
+          and coupon_id = #{couponId}
+          and is_deleted = 0
+    </select>
+
     <insert id="save" parameterType="io.github.weakll.mall.model.entity.user.CouponUser"
             useGeneratedKeys="true" keyProperty="id">
         insert into coupon_user (

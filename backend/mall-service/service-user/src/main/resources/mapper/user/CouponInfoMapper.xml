@@ -28,6 +28,15 @@
         limit 1
     </select>
 
+    <select id="getByIdForUpdate" resultMap="couponInfoMap">
+        select <include refid="columns" />
+        from coupon_info
+        where id = #{id}
+          and is_deleted = 0
+        limit 1
+        for update
+    </select>
+
     <insert id="save" parameterType="io.github.weakll.mall.model.entity.order.CouponInfo"
             useGeneratedKeys="true" keyProperty="id">
         insert into coupon_info (

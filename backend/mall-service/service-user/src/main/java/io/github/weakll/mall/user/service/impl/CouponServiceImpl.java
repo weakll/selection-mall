@@ -10,6 +10,7 @@ import io.github.weakll.mall.utils.AuthContextUtil;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.Calendar;
@@ -130,5 +131,43 @@ public class CouponServiceImpl implements CouponService {
     @Override
     public CouponInfo getById(Long id) {
         return couponInfoMapper.getById(id);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void claimCoupon(Long couponId) {
+        UserInfo userInfo = AuthContextUtil.getUserInfo();
+        if (userInfo == null || userInfo.getId() == null) {
+            throw new IllegalStateException("用户未登录");
+        }
+        CouponInfo coupon = couponInfoMapper.getByIdForUpdate(couponId);
+        if (coupon == null || !Integer.valueOf(1).equals(coupon.getPublishStatus())) {
+            throw new IllegalArgumentException("优惠券不存在或未发布");
+        }
+        Date now = new Date();
+        if (coupon.getStartTime() != null && now.before(coupon.getStartTime())
+                || coupon.getEndTime() != null && now.after(coupon.getEndTime())
+                || coupon.getExpireTime() != null && !now.before(coupon.getExpireTime())) {
+            throw new IllegalArgumentException("优惠券不在可领取时间内");
+        }
+        int receiveCount = coupon.getReceiveCount() == null ? 0 : coupon.getReceiveCount();
+        if (coupon.getPublishCount() != null && coupon.getPublishCount() > 0
+                && receiveCount >= coupon.getPublishCount()) {
+            throw new IllegalStateException("优惠券已领完");
+        }
+        int limit = coupon.getPerLimit() == null ? 0 : coupon.getPerLimit();
+        int received = couponUserMapper.countByUserIdAndCouponId(userInfo.getId(), couponId);
+        if (limit > 0 && received >= limit) {
+            throw new IllegalStateException("已达到该优惠券领取上限");
+        }
+        CouponUser couponUser = new CouponUser();
+        couponUser.setCouponId(couponId);
+        couponUser.setUserId(userInfo.getId());
+        couponUser.setCouponStatus(1);
+        couponUser.setGetType(2);
+        couponUser.setGetTime(now);
+        couponUser.setExpireTime(coupon.getExpireTime());
+        couponUserMapper.save(couponUser);
+        couponInfoMapper.updateReceiveCount(couponId);
     }
 }

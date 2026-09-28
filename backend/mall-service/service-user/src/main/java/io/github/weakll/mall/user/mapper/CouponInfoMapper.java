@@ -12,6 +12,8 @@ public interface CouponInfoMapper {
 
     CouponInfo getById(Long id);
 
+    CouponInfo getByIdForUpdate(Long id);
+
     void save(CouponInfo couponInfo);
 
     void updateReceiveCount(Long id);
