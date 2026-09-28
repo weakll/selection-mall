@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="io.github.weakll.mall.user.mapper.CouponInfoMapper">
+
+    <resultMap id="couponInfoMap" type="io.github.weakll.mall.model.entity.order.CouponInfo" autoMapping="true">
+    </resultMap>
+
+    <sql id="columns">
+        id, coupon_type, coupon_name, amount, condition_amount, start_time, end_time,
+        range_type, range_desc, publish_count, per_limit, use_count, receive_count,
+        expire_time, publish_status, create_time, update_time, is_deleted
+    </sql>
+
+    <select id="findAllPublished" resultMap="couponInfoMap">
+        select <include refid="columns" />
+        from coupon_info
+        where publish_status = 1
+          and is_deleted = 0
+        order by create_time desc, id desc
+    </select>
+
+    <select id="getById" resultMap="couponInfoMap">
+        select <include refid="columns" />
+        from coupon_info
+        where id = #{id}
+          and is_deleted = 0
+        limit 1
+    </select>
+
+    <insert id="save" parameterType="io.github.weakll.mall.model.entity.order.CouponInfo"
+            useGeneratedKeys="true" keyProperty="id">
+        insert into coupon_info (
+            coupon_type, coupon_name, amount, condition_amount, start_time, end_time,
+            range_type, range_desc, publish_count, per_limit, use_count, receive_count,
+            expire_time, publish_status, create_time, update_time, is_deleted
+        ) values (
+            #{couponType}, #{couponName}, #{amount}, #{conditionAmount}, #{startTime}, #{endTime},
+            #{rangeType}, #{rangeDesc}, #{publishCount}, #{perLimit}, #{useCount}, #{receiveCount},
+            #{expireTime}, #{publishStatus}, now(), now(), 0
+        )
+    </insert>
+
+    <update id="updateReceiveCount">
+        update coupon_info
+        set receive_count = receive_count + 1,
+            update_time = now()
+        where id = #{id}
+          and is_deleted = 0
+    </update>
+</mapper>
