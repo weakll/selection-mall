@@ -39,7 +39,8 @@ function setupInterceptors() {
     }
     return res.data
   }, error => {
-    showToast('网络异常')
+    const message = error.response?.data?.message || error.message
+    showToast(message && message !== 'Request failed with status code 500' ? message : '网络异常')
     return Promise.reject(error)
   })
 }
