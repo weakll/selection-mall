@@ -35,6 +35,14 @@ docker compose --env-file .env -f deploy/docker-compose.yml down
 ## 说明
 
 - MySQL、Redis 和 Nacos 均使用持久化数据卷。
-- `deploy/mysql/init.sql` 当前只负责创建数据库，业务表结构将在确认后加入。
+- MySQL 只会在 `mysql-data` 数据卷首次初始化时自动执行 `deploy/mysql/init.sql`。
+- 已有数据卷不会因重新启动 Compose 而重新执行初始化脚本。需要应用当前建表脚本时，在仓库根目录运行：
+
+  ```powershell
+  Get-Content -Raw -Encoding UTF8 .\deploy\mysql\init.sql |
+    docker compose --env-file .env -f .\deploy\docker-compose.yml exec -T mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql -uroot'
+  ```
+
+- 初始化脚本使用 `CREATE TABLE IF NOT EXISTS`，不会删除或重建现有表；已有表的结构变更需要单独编写迁移。
 - 真实环境必须修改 `.env` 中的默认密码。
 - Compose 文件基于 Nacos Client `2.2.1`，服务端固定为 `nacos/nacos-server:v2.2.1`。
