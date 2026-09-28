@@ -73,7 +73,7 @@ public class AlipayController {
         paramMap.put("out_trade_no", orderNo);
         paramMap.put("trade_no", "VIRTUAL_" + System.currentTimeMillis());
         paramMap.put("trade_status", "TRADE_SUCCESS");
-        paramMap.put("total_amount", "0.01");
+        paramMap.put("total_amount", paymentInfoService.savePaymentInfo(orderNo).getAmount().toPlainString());
         paymentInfoService.updatePaymentStatus(paramMap, 2);
 
         return Result.build(null, ResultCodeEnum.SUCCESS);
@@ -90,7 +90,7 @@ public class AlipayController {
         paramMap.put("out_trade_no", orderNo);
         paramMap.put("trade_no", "VIRTUAL_" + System.currentTimeMillis());
         paramMap.put("trade_status", "TRADE_SUCCESS");
-        paramMap.put("total_amount", "0.01");
+        paramMap.put("total_amount", paymentInfoService.savePaymentInfo(orderNo).getAmount().toPlainString());
 
         // 更新支付状态、订单状态、商品销量
         paymentInfoService.updatePaymentStatus(paramMap, 2);

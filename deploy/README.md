@@ -49,13 +49,14 @@ docker compose --env-file .env -f deploy/docker-compose.yml down
 
 ## 生产化部署
 
-生产 Compose 会构建 H5、网关和业务服务镜像。先完成后端打包，再在仓库根目录执行：
+生产 Compose 会构建 H5、网关和业务服务镜像；MySQL、Redis、Nacos 作为外部基础设施运行。先启动基础设施并完成后端打包，再在仓库根目录执行：
 
 ```powershell
 Copy-Item deploy/.env.example deploy/.env
+docker compose --env-file deploy/.env -f deploy/docker-compose.yml up -d
 docker compose --env-file deploy/.env -f deploy/docker-compose.prod.yml build
 docker compose --env-file deploy/.env -f deploy/docker-compose.prod.yml up -d
 docker compose --env-file deploy/.env -f deploy/docker-compose.prod.yml ps
 ```
 
-访问 `http://服务器地址/` 使用 H5，`/api/` 请求由 Nginx 转发到网关。生产环境必须替换 `.env` 中的密码和 `FRONTEND_URL`，并在云安全组仅开放 `80` 或 `443`。
+访问 `http://服务器地址/` 使用 H5，`/api/` 请求由 Nginx 转发到网关。生产环境必须替换 `.env` 中的密码和 `FRONTEND_URL`，并在云安全组仅开放 `80` 或 `443`。应用服务通过 Docker 网络访问 `mysql`、`redis`、`nacos` 服务名。

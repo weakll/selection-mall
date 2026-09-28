@@ -21,6 +21,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.math.BigDecimal;
 
 @Service
 public class PaymentInfoServiceImpl implements PaymentInfoService {
@@ -71,6 +72,11 @@ public class PaymentInfoServiceImpl implements PaymentInfoService {
         if (Integer.valueOf(1).equals(paymentInfo.getPaymentStatus())) {
             return;
         }
+        if (!"TRADE_SUCCESS".equals(map.get("trade_status"))
+                || !StringUtils.hasText(map.get("trade_no"))
+                || !isMatchingAmount(paymentInfo.getAmount(), map.get("total_amount"))) {
+            throw new MallException(ResultCodeEnum.DATA_ERROR);
+        }
 
         int affectedRows = paymentInfoMapper.markPaid(
                 orderNo,
@@ -97,6 +103,17 @@ public class PaymentInfoServiceImpl implements PaymentInfoService {
                 return skuSaleDto;
             }).collect(Collectors.toList());
             productFeignClient.updateSkuSaleNum(skuSaleDtoList);
+        }
+    }
+
+    private boolean isMatchingAmount(java.math.BigDecimal expected, String actualValue) {
+        if (expected == null || !StringUtils.hasText(actualValue)) {
+            return false;
+        }
+        try {
+            return expected.compareTo(new BigDecimal(actualValue)) == 0;
+        } catch (NumberFormatException exception) {
+            return false;
         }
     }
 }

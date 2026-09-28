@@ -1,27 +1,12 @@
 name: selection-mall-prod
 
 services:
-  mysql:
-    extends:
-      file: docker-compose.yml
-      service: mysql
-    ports: []
-  redis:
-    extends:
-      file: docker-compose.yml
-      service: redis
-    ports: []
-  nacos:
-    extends:
-      file: docker-compose.yml
-      service: nacos
-
   gateway:
     build:
       context: ../backend/mall-gateway
     environment:
       NACOS_SERVER_ADDR: nacos:8848
-    depends_on: [nacos, mysql, redis]
+    depends_on: []
     ports: ["8500:8500"]
     networks: [mall-network]
 
@@ -38,30 +23,30 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD:-change_me}
-    depends_on: [nacos, mysql, redis]
+    depends_on: []
     networks: [mall-network]
 
   service-product:
     build: { context: ../backend/mall-service/service-product }
     environment: *backend-env
-    depends_on: [nacos, mysql, redis]
+    depends_on: []
     networks: [mall-network]
   service-cart:
     build: { context: ../backend/mall-service/service-cart }
     environment: *backend-env
-    depends_on: [nacos, mysql, redis]
+    depends_on: []
     networks: [mall-network]
   service-order:
     build: { context: ../backend/mall-service/service-order }
     environment: *backend-env
-    depends_on: [nacos, mysql, redis]
+    depends_on: []
     networks: [mall-network]
   service-pay:
     build: { context: ../backend/mall-service/service-pay }
     environment:
       <<: *backend-env
       FRONTEND_URL: ${FRONTEND_URL:-http://127.0.0.1}
-    depends_on: [nacos, mysql, redis]
+    depends_on: []
     networks: [mall-network]
 
   h5:
@@ -75,13 +60,4 @@ services:
 networks:
   mall-network:
     name: selection-mall-network
-
-volumes:
-  mysql-data:
-    name: selection-mall-mysql-data
-  redis-data:
-    name: selection-mall-redis-data
-  nacos-data:
-    name: selection-mall-nacos-data
-  nacos-logs:
-    name: selection-mall-nacos-logs
+    external: true
