@@ -4,7 +4,8 @@ import io.github.weakll.mall.common.cache.CacheConstants;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 @Component
 public class CatalogCacheEvictor {
@@ -29,8 +30,12 @@ public class CatalogCacheEvictor {
     }
 
     private void evict(String cacheName) {
-        Set<String> keys = redisTemplate.keys(cacheName + "::*");
-        if (keys != null && !keys.isEmpty()) {
+        List<String> keys = new ArrayList<>();
+        redisTemplate.scan(org.springframework.data.redis.core.ScanOptions.scanOptions()
+                .match(cacheName + "::*")
+                .count(200)
+                .build()).forEachRemaining(keys::add);
+        if (!keys.isEmpty()) {
             redisTemplate.delete(keys);
         }
     }

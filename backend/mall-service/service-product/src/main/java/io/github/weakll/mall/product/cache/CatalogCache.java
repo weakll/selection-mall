@@ -8,6 +8,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.concurrent.ThreadLocalRandom;
@@ -66,8 +67,12 @@ public class CatalogCache {
     }
 
     public void evictAll(String cacheName) {
-        var keys = redisTemplate.keys(cacheName + "::*");
-        if (keys != null && !keys.isEmpty()) {
+        List<String> keys = new ArrayList<>();
+        redisTemplate.scan(org.springframework.data.redis.core.ScanOptions.scanOptions()
+                .match(cacheName + "::*")
+                .count(200)
+                .build()).forEachRemaining(keys::add);
+        if (!keys.isEmpty()) {
             redisTemplate.delete(keys);
         }
     }
