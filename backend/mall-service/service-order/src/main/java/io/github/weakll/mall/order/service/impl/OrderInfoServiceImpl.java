@@ -19,6 +19,8 @@ import io.github.weakll.mall.model.vo.h5.TradeVo;
 import io.github.weakll.mall.order.mapper.OrderInfoMapper;
 import io.github.weakll.mall.order.mapper.OrderItemMapper;
 import io.github.weakll.mall.order.mapper.OrderLogMapper;
+import io.github.weakll.mall.order.mapper.StockRestoreCompensationMapper;
+import io.github.weakll.mall.order.model.StockRestoreCompensation;
 import io.github.weakll.mall.order.service.OrderInfoService;
 import io.github.weakll.mall.utils.AuthContextUtil;
 import com.github.pagehelper.PageHelper;
@@ -39,6 +41,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
+import com.alibaba.fastjson.JSON;
 
 @Slf4j
 @Service
@@ -64,6 +67,9 @@ public class OrderInfoServiceImpl implements OrderInfoService {
 
     @Autowired
     private OrderLogMapper orderLogMapper;
+
+    @Autowired
+    private StockRestoreCompensationMapper stockRestoreCompensationMapper;
 
     @Autowired
     private RedisTemplate<String, String> redisTemplate;
@@ -205,7 +211,7 @@ public class OrderInfoServiceImpl implements OrderInfoService {
             return orderInfo.getId();
         } catch (RuntimeException | Error exception) {
             if (stockDeducted) {
-                restoreReservedStock(stockItems, exception);
+                restoreReservedStock(orderInfoDto.getRequestId(), stockItems, exception);
             }
             releaseOrderSubmitKey(idempotencyKey);
             throw exception;
@@ -272,16 +278,26 @@ public class OrderInfoServiceImpl implements OrderInfoService {
         }
     }
 
-    private void restoreReservedStock(List<SkuSaleDto> stockItems, Throwable cause) {
+    private void restoreReservedStock(String orderNo, List<SkuSaleDto> stockItems, Throwable cause) {
         try {
             Boolean restored = productFeignClient.restoreStock(stockItems);
             if (!Boolean.TRUE.equals(restored)) {
+                enqueueStockRestoreCompensation(orderNo, stockItems, "商品服务拒绝库存回补");
                 log.error("Product service rejected stock restoration. items={}", stockItems, cause);
             }
         } catch (Exception restoreException) {
+            enqueueStockRestoreCompensation(orderNo, stockItems, restoreException.getMessage());
             log.error("Failed to restore reserved stock after order persistence failure. items={}",
                     stockItems, restoreException);
         }
+    }
+
+    private void enqueueStockRestoreCompensation(String orderNo, List<SkuSaleDto> stockItems, String errorMessage) {
+        StockRestoreCompensation compensation = new StockRestoreCompensation();
+        compensation.setOrderNo(orderNo);
+        compensation.setStockItemsJson(JSON.toJSONString(stockItems));
+        compensation.setErrorMessage(errorMessage);
+        stockRestoreCompensationMapper.save(compensation);
     }
 
     @Override
@@ -382,6 +398,7 @@ public class OrderInfoServiceImpl implements OrderInfoService {
             return stockItem;
         }).collect(Collectors.toList());
         if (!stockItems.isEmpty() && !Boolean.TRUE.equals(productFeignClient.restoreStock(stockItems))) {
+            enqueueStockRestoreCompensation(orderNo, stockItems, "商品服务拒绝库存回补");
             throw new MallException(ResultCodeEnum.SYSTEM_ERROR);
         }
     }

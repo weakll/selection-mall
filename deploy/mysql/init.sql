@@ -394,6 +394,20 @@ CREATE TABLE IF NOT EXISTS `order_log` (
     KEY `idx_order_log_order_time` (`order_id`, `create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS `stock_restore_compensation` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT,
+    `order_no` VARCHAR(64) DEFAULT NULL,
+    `stock_items_json` TEXT NOT NULL,
+    `status` TINYINT NOT NULL DEFAULT 0,
+    `retry_count` INT NOT NULL DEFAULT 0,
+    `error_message` VARCHAR(500) DEFAULT NULL,
+    `next_retry_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `idx_stock_restore_compensation_pending` (`status`, `next_retry_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS `order_statistics` (
     `id` BIGINT NOT NULL AUTO_INCREMENT,
     `order_date` DATE NOT NULL,

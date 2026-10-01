@@ -29,3 +29,6 @@ mall:
     unpaid-timeout-minutes: ${ORDER_UNPAID_TIMEOUT_MINUTES:30}
     expire-scan-delay-ms: ${ORDER_EXPIRE_SCAN_DELAY_MS:60000}
     expire-batch-size: ${ORDER_EXPIRE_BATCH_SIZE:100}
+    restore-compensation-scan-delay-ms: ${ORDER_RESTORE_COMPENSATION_SCAN_DELAY_MS:60000}
+    restore-compensation-batch-size: ${ORDER_RESTORE_COMPENSATION_BATCH_SIZE:50}
+    restore-compensation-max-retries: ${ORDER_RESTORE_COMPENSATION_MAX_RETRIES:10}

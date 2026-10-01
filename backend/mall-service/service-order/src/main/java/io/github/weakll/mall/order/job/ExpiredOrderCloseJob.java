@@ -5,6 +5,9 @@ import io.github.weakll.mall.model.dto.product.SkuSaleDto;
 import io.github.weakll.mall.model.entity.order.OrderInfo;
 import io.github.weakll.mall.order.mapper.OrderInfoMapper;
 import io.github.weakll.mall.order.mapper.OrderItemMapper;
+import io.github.weakll.mall.order.mapper.StockRestoreCompensationMapper;
+import io.github.weakll.mall.order.model.StockRestoreCompensation;
+import com.alibaba.fastjson.JSON;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -23,6 +26,7 @@ public class ExpiredOrderCloseJob {
     private final OrderInfoMapper orderInfoMapper;
     private final OrderItemMapper orderItemMapper;
     private final ProductFeignClient productFeignClient;
+    private final StockRestoreCompensationMapper compensationMapper;
     private final int timeoutMinutes;
     private final int batchSize;
 
@@ -30,11 +34,13 @@ public class ExpiredOrderCloseJob {
             OrderInfoMapper orderInfoMapper,
             OrderItemMapper orderItemMapper,
             ProductFeignClient productFeignClient,
+            StockRestoreCompensationMapper compensationMapper,
             @Value("${mall.order.unpaid-timeout-minutes:30}") int timeoutMinutes,
             @Value("${mall.order.expire-batch-size:100}") int batchSize) {
         this.orderInfoMapper = orderInfoMapper;
         this.orderItemMapper = orderItemMapper;
         this.productFeignClient = productFeignClient;
+        this.compensationMapper = compensationMapper;
         this.timeoutMinutes = timeoutMinutes;
         this.batchSize = batchSize;
     }
@@ -66,6 +72,11 @@ public class ExpiredOrderCloseJob {
                 })
                 .collect(Collectors.toList());
         if (!stockItems.isEmpty() && !Boolean.TRUE.equals(productFeignClient.restoreStock(stockItems))) {
+            StockRestoreCompensation compensation = new StockRestoreCompensation();
+            compensation.setOrderNo(order.getOrderNo());
+            compensation.setStockItemsJson(JSON.toJSONString(stockItems));
+            compensation.setErrorMessage("商品服务拒绝库存回补");
+            compensationMapper.save(compensation);
             log.error("Failed to restore stock for expired order. orderNo={}, items={}", order.getOrderNo(), stockItems);
         }
     }

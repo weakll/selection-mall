@@ -136,6 +136,7 @@ pnpm dev
 - 后端：Maven 编译、打包和单元测试
 - H5：pnpm 依赖锁定安装和生产构建
 - CI：推送或 Pull Request 到 `main` 时自动执行上述两类验证
+- 库存回补失败：持久化补偿记录并由定时任务指数退避重试
 
 ## Roadmap
 

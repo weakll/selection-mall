@@ -5,6 +5,7 @@ import io.github.weakll.mall.model.entity.order.OrderInfo;
 import io.github.weakll.mall.model.entity.order.OrderItem;
 import io.github.weakll.mall.order.mapper.OrderInfoMapper;
 import io.github.weakll.mall.order.mapper.OrderItemMapper;
+import io.github.weakll.mall.order.mapper.StockRestoreCompensationMapper;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -19,7 +20,8 @@ class ExpiredOrderCloseJobTest {
         OrderInfoMapper orderInfoMapper = mock(OrderInfoMapper.class);
         OrderItemMapper orderItemMapper = mock(OrderItemMapper.class);
         ProductFeignClient productFeignClient = mock(ProductFeignClient.class);
-        ExpiredOrderCloseJob job = new ExpiredOrderCloseJob(orderInfoMapper, orderItemMapper, productFeignClient, 30, 100);
+        StockRestoreCompensationMapper compensationMapper = mock(StockRestoreCompensationMapper.class);
+        ExpiredOrderCloseJob job = new ExpiredOrderCloseJob(orderInfoMapper, orderItemMapper, productFeignClient, compensationMapper, 30, 100);
         OrderInfo order = order(1L, "order-1");
         when(orderInfoMapper.cancelExpiredOrder(any(), any(), any())).thenReturn(0);
 
@@ -33,7 +35,8 @@ class ExpiredOrderCloseJobTest {
         OrderInfoMapper orderInfoMapper = mock(OrderInfoMapper.class);
         OrderItemMapper orderItemMapper = mock(OrderItemMapper.class);
         ProductFeignClient productFeignClient = mock(ProductFeignClient.class);
-        ExpiredOrderCloseJob job = new ExpiredOrderCloseJob(orderInfoMapper, orderItemMapper, productFeignClient, 30, 100);
+        StockRestoreCompensationMapper compensationMapper = mock(StockRestoreCompensationMapper.class);
+        ExpiredOrderCloseJob job = new ExpiredOrderCloseJob(orderInfoMapper, orderItemMapper, productFeignClient, compensationMapper, 30, 100);
         OrderInfo order = order(1L, "order-1");
         OrderItem item = new OrderItem();
         item.setSkuId(10L);
