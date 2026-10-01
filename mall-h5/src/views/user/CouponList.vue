@@ -6,14 +6,38 @@
       <van-loading type="spinner" color="#ff6600" />
     </div>
 
-    <div v-else-if="!list.length" class="empty-wrap">
+    <div v-else-if="!list.length && !availableList.length" class="empty-wrap">
       <van-empty description="暂无优惠券" />
       <van-button round type="primary" color="#ff6600" class="go-btn" @click="$router.push('/index')">
         去逛逛
       </van-button>
     </div>
 
-    <div v-else class="coupon-list">
+    <div v-if="availableList.length" class="coupon-list available-list">
+      <div class="section-title">可领取优惠券</div>
+      <div v-for="item in availableList" :key="item.id" class="coupon-card available-card">
+        <div class="coupon-left">
+          <div class="coupon-amount">
+            <span class="symbol">¥</span>
+            <span class="num">{{ item.amount }}</span>
+          </div>
+          <div class="coupon-type">
+            {{ item.couponType === 2 ? `满${item.conditionAmount}可用` : '无门槛' }}
+          </div>
+        </div>
+        <div class="coupon-right">
+          <div class="coupon-name">{{ item.couponName }}</div>
+          <div class="coupon-range">{{ item.rangeDesc || '全场通用' }}</div>
+          <div class="coupon-time">有效期至 {{ formatDate(item.expireTime) }}</div>
+        </div>
+        <van-button size="small" plain type="primary" :loading="claimingId === item.id" @click="onClaim(item.id)">
+          领取
+        </van-button>
+      </div>
+    </div>
+
+    <div v-if="list.length" class="coupon-list">
+      <div class="section-title">我的优惠券</div>
       <div
         v-for="item in list"
         :key="item.id"
@@ -47,37 +71,59 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { showToast } from 'vant'
-import { getUserCouponList, getCouponById } from '../../api/user.js'
+import { getUserCouponList, getCouponById, getPublishedCoupons, claimCoupon } from '../../api/user.js'
 
 const list = ref([])
 const loading = ref(true)
+const availableList = ref([])
+const claimingId = ref(null)
+
+const loadCoupons = async () => {
+  const [couponUsers, publishedCoupons] = await Promise.all([
+    getUserCouponList().catch(() => []),
+    getPublishedCoupons().catch(() => []),
+  ])
+  const uniqueIds = [...new Set(couponUsers.map(cu => cu.couponId))]
+  const details = await Promise.all(
+    uniqueIds.map(id => getCouponById(id).catch(() => null))
+  )
+  const detailMap = new Map()
+  details.forEach(d => { if (d) detailMap.set(d.id, d) })
+
+  list.value = couponUsers.map(cu => {
+    const info = detailMap.get(cu.couponId)
+    return {
+      id: cu.id,
+      couponId: cu.couponId,
+      couponStatus: cu.couponStatus,
+      expireTime: cu.expireTime,
+      ...info,
+    }
+  }).filter(item => item.couponName)
+
+  const ownedIds = new Set(couponUsers.map(cu => cu.couponId))
+  availableList.value = publishedCoupons.filter(item => !ownedIds.has(item.id))
+}
 
 onMounted(async () => {
   try {
-    const couponUsers = await getUserCouponList() || []
-    const uniqueIds = [...new Set(couponUsers.map(cu => cu.couponId))]
-    const details = await Promise.all(
-      uniqueIds.map(id => getCouponById(id).catch(() => null))
-    )
-    const detailMap = new Map()
-    details.forEach(d => { if (d) detailMap.set(d.id, d) })
-
-    list.value = couponUsers.map(cu => {
-      const info = detailMap.get(cu.couponId)
-      return {
-        id: cu.id,
-        couponId: cu.couponId,
-        couponStatus: cu.couponStatus,
-        expireTime: cu.expireTime,
-        ...info,
-      }
-    }).filter(item => item.couponName)
+    await loadCoupons()
   } catch (e) {
     showToast('加载失败')
   } finally {
     loading.value = false
   }
 })
+
+const onClaim = async (id) => {
+  claimingId.value = id
+  try {
+    await claimCoupon(id)
+    showToast('领取成功')
+    await loadCoupons()
+  } catch (e) {}
+  claimingId.value = null
+}
 
 const formatDate = (str) => {
   if (!str) return ''
@@ -117,6 +163,21 @@ const isExpired = (item) => {
 
 .coupon-list {
   padding: 12px;
+}
+
+.section-title {
+  margin: 4px 0 10px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.available-list {
+  padding-bottom: 0;
+}
+
+.available-card {
+  padding-right: 12px;
 }
 
 .coupon-card {

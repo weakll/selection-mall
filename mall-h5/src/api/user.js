@@ -18,3 +18,5 @@ export const getBrowseHistoryList = () => request.get('/user/userInfo/auth/findB
 export const clearBrowseHistory = () => request.get('/user/userInfo/auth/clearBrowseHistory')
 export const getUserCouponList = () => request.get('/user/couponInfo/auth/findUserCouponList')
 export const getCouponById = (id) => request.get(`/user/couponInfo/getById/${id}`)
+export const getPublishedCoupons = () => request.get('/user/couponInfo/findAllPublished')
+export const claimCoupon = (id) => request.post(`/user/couponInfo/auth/claim/${id}`)
