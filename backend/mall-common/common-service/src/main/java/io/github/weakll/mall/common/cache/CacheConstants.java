@@ -6,6 +6,7 @@ public final class CacheConstants {
     public static final String CATEGORY_TREE = "mall:catalog:category-tree";
     public static final String CATEGORY_ONE = "mall:catalog:category-one";
     public static final String BRAND_LIST = "mall:catalog:brand-list";
+    public static final String NULL_VALUE = "__MALL_CACHE_NULL__";
 
     private CacheConstants() {
     }

@@ -5,6 +5,7 @@ import io.github.weakll.mall.common.anno.EnableUserWebMvcConfiguration;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.openfeign.EnableFeignClients;
+import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableUserTokenFeignInterceptor
 @EnableUserWebMvcConfiguration
 @SpringBootApplication
@@ -13,6 +14,7 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
         "io.github.weakll.mall.feign.user",
         "io.github.weakll.mall.feign.product"
 })
+@EnableScheduling
 
 public class OrderApplication {
 

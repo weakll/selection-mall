@@ -1,13 +1,12 @@
 package io.github.weakll.mall.manager.service.impl;
 
-import io.github.weakll.mall.common.cache.CacheConstants;
 import io.github.weakll.mall.manager.mapper.BrandMapper;
+import io.github.weakll.mall.manager.cache.CatalogCacheEvictor;
 import io.github.weakll.mall.manager.service.BrandService;
 import io.github.weakll.mall.model.entity.product.Brand;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -16,6 +15,8 @@ import java.util.List;
 public class BrandServiceImpl implements BrandService {
     @Autowired
     private BrandMapper brandMapper ;
+    @Autowired
+    private CatalogCacheEvictor catalogCacheEvictor;
     @Override
     public PageInfo<Brand> findByPage(Integer page, Integer limit) {
         PageHelper.startPage(page, limit);
@@ -24,21 +25,21 @@ public class BrandServiceImpl implements BrandService {
     }
 
     @Override
-    @CacheEvict(value = CacheConstants.BRAND_LIST, allEntries = true)
     public void save(Brand brand) {
         brandMapper.save(brand);
+        catalogCacheEvictor.evictBrands();
     }
 
     @Override
-    @CacheEvict(value = CacheConstants.BRAND_LIST, allEntries = true)
     public void updateById(Brand brand) {
         brandMapper.updateById(brand);
+        catalogCacheEvictor.evictBrands();
     }
 
     @Override
-    @CacheEvict(value = CacheConstants.BRAND_LIST, allEntries = true)
     public void deleteById(Long id) {
         brandMapper.deleteById(id) ;
+        catalogCacheEvictor.evictBrands();
     }
 
     @Override

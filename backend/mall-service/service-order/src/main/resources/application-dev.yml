@@ -23,3 +23,9 @@ spring:
 mybatis:
   config-location: classpath:mybatis-config.xml
   mapper-locations: classpath:mapper.order/*.xml
+
+mall:
+  order:
+    unpaid-timeout-minutes: ${ORDER_UNPAID_TIMEOUT_MINUTES:30}
+    expire-scan-delay-ms: ${ORDER_EXPIRE_SCAN_DELAY_MS:60000}
+    expire-batch-size: ${ORDER_EXPIRE_BATCH_SIZE:100}

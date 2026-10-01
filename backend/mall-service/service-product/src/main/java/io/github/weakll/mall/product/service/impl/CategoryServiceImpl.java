@@ -7,28 +7,45 @@ import io.github.weakll.mall.product.service.CategoryService;
 
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import java.time.Duration;
+import io.github.weakll.mall.product.cache.CatalogCache;
 
 @Service
 public class CategoryServiceImpl implements CategoryService {
     @Autowired
     private CategoryMapper categoryMapper;
+    @Autowired
+    private CatalogCache catalogCache;
 
     @Override
-    @Cacheable(value = CacheConstants.CATEGORY_ONE, key = "'all'")
     public List<Category> findOneCategory() {
-        return categoryMapper.findOneCategory();
+        return catalogCache.getListOrLoad(
+                CacheConstants.CATEGORY_ONE,
+                "all",
+                Duration.ofHours(6),
+                Category.class,
+                categoryMapper::findOneCategory
+        );
     }
 
 
     @Override
-    @Cacheable(value = CacheConstants.CATEGORY_TREE, key = "'all'")
     public List<Category> findOneCategoryTree() {
+        return catalogCache.getListOrLoad(
+                CacheConstants.CATEGORY_TREE,
+                "all",
+                Duration.ofHours(6),
+                Category.class,
+                this::loadCategoryTree
+        );
+    }
+
+    private List<Category> loadCategoryTree() {
         List<Category> categoryList = categoryMapper.findAll();
         if (CollectionUtils.isEmpty(categoryList)) {
             return null;

@@ -1,7 +1,7 @@
 package io.github.weakll.mall.manager.service.impl;
 
-import io.github.weakll.mall.common.cache.CacheConstants;
 import io.github.weakll.mall.manager.mapper.ProductDetailsMapper;
+import io.github.weakll.mall.manager.cache.CatalogCacheEvictor;
 import io.github.weakll.mall.manager.mapper.ProductMapper;
 import io.github.weakll.mall.manager.mapper.ProductSkuMapper;
 import io.github.weakll.mall.manager.service.ProductService;
@@ -12,7 +12,6 @@ import io.github.weakll.mall.model.entity.product.ProductSku;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,9 +31,10 @@ public class ProductServiceImpl implements ProductService {
     private ProductSkuMapper productSkuMapper;
     @Autowired
     private ProductDetailsMapper productDetailsMapper;
+    @Autowired
+    private CatalogCacheEvictor catalogCacheEvictor;
     @Transactional
     @Override
-    @CacheEvict(value = CacheConstants.PRODUCT_ITEM, allEntries = true)
     public void save(Product product) {
         // 保存商品数据
         product.setStatus(0); // 设置上架状态为0
@@ -57,6 +57,7 @@ public class ProductServiceImpl implements ProductService {
         productDetails.setProductId(product.getId());
         productDetails.setImageUrls(product.getDetailsImageUrls());
         productDetailsMapper.save(productDetails);
+        catalogCacheEvictor.evictProductItems();
     }
 
     @Override
@@ -75,7 +76,6 @@ public class ProductServiceImpl implements ProductService {
 
     @Transactional
     @Override
-    @CacheEvict(value = CacheConstants.PRODUCT_ITEM, allEntries = true)
     public void updateById(Product product) {
         // 修改商品基本数据
         productMapper.updateById(product);
@@ -88,19 +88,19 @@ public class ProductServiceImpl implements ProductService {
         ProductDetails productDetails = productDetailsMapper.selectByProductId(product.getId());
         productDetails.setImageUrls(product.getDetailsImageUrls());
         productDetailsMapper.updateById(productDetails);
+        catalogCacheEvictor.evictProductItems();
     }
 
     @Transactional
     @Override
-    @CacheEvict(value = CacheConstants.PRODUCT_ITEM, allEntries = true)
     public void deleteById(Long id) {
         productMapper.deleteById(id); // 根据id删除商品基本数据
         productSkuMapper.deleteByProductId(id); // 根据商品id删除商品的sku数据
         productDetailsMapper.deleteByProductId(id); // 根据商品的id删除商品的详情数据
+        catalogCacheEvictor.evictProductItems();
     }
 
     @Override
-    @CacheEvict(value = CacheConstants.PRODUCT_ITEM, allEntries = true)
     public void updateAuditStatus(Long id, Integer auditStatus) {
         Product product = new Product();
         product.setId(id);
@@ -112,10 +112,10 @@ public class ProductServiceImpl implements ProductService {
             product.setAuditMessage("审批不通过");
         }
         productMapper.updateById(product);
+        catalogCacheEvictor.evictProductItems();
     }
 
     @Override
-    @CacheEvict(value = CacheConstants.PRODUCT_ITEM, allEntries = true)
     public void updateStatus(Long id, Integer status) {
         Product product = new Product();
         product.setId(id);
@@ -125,6 +125,7 @@ public class ProductServiceImpl implements ProductService {
             product.setStatus(-1);
         }
         productMapper.updateById(product);
+        catalogCacheEvictor.evictProductItems();
     }
 
 

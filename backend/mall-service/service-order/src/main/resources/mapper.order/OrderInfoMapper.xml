@@ -94,6 +94,27 @@
         order_no = #{orderNo}
     </select>
 
+    <select id="findPendingOrdersBefore" resultMap="orderInfoMap">
+        select <include refid="columns" />
+        from order_info
+        where order_status = 0
+          and create_time &lt; #{expireTime}
+          and is_deleted = 0
+        order by id asc
+        limit #{limit}
+    </select>
+
+    <update id="cancelExpiredOrder">
+        update order_info
+        set order_status = -1,
+            cancel_time = #{cancelTime},
+            cancel_reason = #{cancelReason},
+            update_time = now()
+        where order_no = #{orderNo}
+          and order_status = 0
+          and is_deleted = 0
+    </update>
+
     <update id="updateById" >
         update order_info set
         <if test="userId != null and userId != ''">

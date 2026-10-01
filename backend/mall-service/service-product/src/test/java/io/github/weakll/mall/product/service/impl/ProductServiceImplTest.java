@@ -3,6 +3,7 @@ package io.github.weakll.mall.product.service.impl;
 import io.github.weakll.mall.common.exception.MallException;
 import io.github.weakll.mall.model.dto.product.SkuSaleDto;
 import io.github.weakll.mall.product.mapper.ProductSkuMapper;
+import io.github.weakll.mall.product.cache.CatalogCache;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -21,6 +22,9 @@ class ProductServiceImplTest {
 
     @Mock
     private ProductSkuMapper productSkuMapper;
+
+    @Mock
+    private CatalogCache catalogCache;
 
     @InjectMocks
     private ProductServiceImpl productService;

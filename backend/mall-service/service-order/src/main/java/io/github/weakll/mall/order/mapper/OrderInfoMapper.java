@@ -28,4 +28,11 @@ public interface OrderInfoMapper {
                            @Param("userId") Long userId,
                            @Param("cancelReason") String cancelReason,
                            @Param("cancelTime") Date cancelTime);
+
+    List<OrderInfo> findPendingOrdersBefore(@Param("expireTime") Date expireTime,
+                                            @Param("limit") int limit);
+
+    int cancelExpiredOrder(@Param("orderNo") String orderNo,
+                           @Param("cancelReason") String cancelReason,
+                           @Param("cancelTime") Date cancelTime);
 }

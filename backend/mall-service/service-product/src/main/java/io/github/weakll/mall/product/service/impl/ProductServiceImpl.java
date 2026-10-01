@@ -19,8 +19,6 @@ import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import com.github.xiaoymin.knife4j.core.util.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +26,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.time.Duration;
 
 @Service
 public class ProductServiceImpl implements ProductService {
@@ -39,6 +38,8 @@ public class ProductServiceImpl implements ProductService {
 
     @Autowired
     private ProductDetailsMapper productDetailsMapper;
+    @Autowired
+    private io.github.weakll.mall.product.cache.CatalogCache catalogCache;
     @Override
     public PageInfo<ProductSku> findByPage(Integer page, Integer limit, ProductSkuDto productSkuDto) {
         PageHelper.startPage(page, limit);
@@ -53,19 +54,18 @@ public class ProductServiceImpl implements ProductService {
 
     @Transactional
     @Override
-    @CacheEvict(value = CacheConstants.PRODUCT_ITEM, allEntries = true)
     public Boolean updateSkuSaleNum(List<SkuSaleDto> skuSaleDtoList) {
         if(!CollectionUtils.isEmpty(skuSaleDtoList)) {
             for(SkuSaleDto skuSaleDto : skuSaleDtoList) {
                 productSkuMapper.updateSale(skuSaleDto.getSkuId(), skuSaleDto.getNum());
             }
         }
+        catalogCache.evictAll(CacheConstants.PRODUCT_ITEM);
         return true;
     }
 
     @Transactional
     @Override
-    @CacheEvict(value = CacheConstants.PRODUCT_ITEM, allEntries = true)
     public Boolean deductStock(List<SkuSaleDto> skuSaleDtoList) {
         if (!CollectionUtils.isEmpty(skuSaleDtoList)) {
             for (SkuSaleDto skuSaleDto : skuSaleDtoList) {
@@ -79,12 +79,12 @@ public class ProductServiceImpl implements ProductService {
                 }
             }
         }
+        catalogCache.evictAll(CacheConstants.PRODUCT_ITEM);
         return true;
     }
 
     @Transactional
     @Override
-    @CacheEvict(value = CacheConstants.PRODUCT_ITEM, allEntries = true)
     public Boolean restoreStock(List<SkuSaleDto> skuSaleDtoList) {
         if (!CollectionUtils.isEmpty(skuSaleDtoList)) {
             for (SkuSaleDto skuSaleDto : skuSaleDtoList) {
@@ -98,6 +98,7 @@ public class ProductServiceImpl implements ProductService {
                 }
             }
         }
+        catalogCache.evictAll(CacheConstants.PRODUCT_ITEM);
         return true;
     }
 
@@ -107,8 +108,17 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    @Cacheable(value = CacheConstants.PRODUCT_ITEM, key = "#skuId")
     public ProductItemVo item(Long skuId) {
+        return catalogCache.getOrLoad(
+                CacheConstants.PRODUCT_ITEM,
+                String.valueOf(skuId),
+                Duration.ofMinutes(30),
+                ProductItemVo.class,
+                () -> loadItem(skuId)
+        );
+    }
+
+    private ProductItemVo loadItem(Long skuId) {
         //当前sku信息
         ProductSku productSku = productSkuMapper.getById(skuId);
         if (productSku == null) {
