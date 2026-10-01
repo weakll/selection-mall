@@ -4,6 +4,20 @@
 
 精选商城（Selection Mall）是一个基于 `Spring Cloud Alibaba` 和 `Vue 3` 的前后端分离微服务商城项目，覆盖商品浏览、购物车、下单、库存控制、优惠券和可演示支付链路。
 
+## 演示截图
+
+### 商城首页
+
+![商城首页](docs/screenshots/home.png)
+
+### 用户登录
+
+![用户登录](docs/screenshots/login.png)
+
+### 系统设置
+
+![系统设置](docs/screenshots/settings.png)
+
 ## 项目状态
 
 v1 正在开发中。后端模块和 H5 前端均已完成第一阶段迁移，并分别通过 Maven 和 Vite 生产构建。
