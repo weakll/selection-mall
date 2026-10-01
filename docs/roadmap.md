@@ -38,7 +38,7 @@
 - GitHub Actions
 - Docker Compose
 - 本地启动说明
-- 页面截图
+- 页面截图（已完成）
 - 演示 GIF
 - 生产环境部署验证
 - Redis 集群场景下缓存失效优化（当前已改为 `SCAN`，跨节点扫描仍需部署验证）

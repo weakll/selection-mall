@@ -10,6 +10,12 @@
 
 ![商城首页](docs/screenshots/home.png)
 
+### 商品详情素材
+
+![商品详情素材](mall-h5/public/static/products/phone-detail-1.jpg)
+
+商品详情页使用本地演示图片，完整图片资源和来源见 [演示素材说明](docs/demo-assets.md)。
+
 ### 用户登录
 
 ![用户登录](docs/screenshots/login.png)
