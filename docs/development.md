@@ -19,10 +19,11 @@
 2. 修改本地数据库、Redis 和 Nacos 配置。
 3. 确认 `.env` 被 Git 忽略。
 4. 执行 `docker compose --env-file .env -f deploy/docker-compose.yml up -d` 启动基础设施。
-5. 启动后端服务。
-6. 启动 H5 前端。
+5. 在 `backend` 目录执行 `mvn -B package` 编译并测试后端。
+6. 按需启动网关和各业务服务的 Spring Boot 应用，服务配置通过环境变量或本地配置文件指向 Docker 中的 MySQL、Redis 和 Nacos。
+7. 在 `mall-h5` 目录执行 `pnpm install --frozen-lockfile` 和 `pnpm dev` 启动 H5。
 
-具体命令将在对应源码迁入后补充，当前不提供无法验证的启动命令。
+首次启动时，MySQL 会自动执行 `deploy/mysql/init.sql`；已有 `mysql-data` 数据卷不会重复执行初始化脚本。完整基础设施命令见 [部署说明](../deploy/README.md)。
 
 ## 配置规则
 
@@ -54,3 +55,16 @@ ci:
 - 核心接口具备明确的成功与失败行为。
 - 缓存、库存和支付链路具备测试或可重复验证步骤。
 - README 中的启动说明与实际环境一致。
+
+## 测试账号与验证边界
+
+仓库不提交固定测试账号或真实用户数据。启动 H5 后可通过注册页面创建本地账号，再验证登录、商品浏览、购物车、下单和本地演示支付流程。支付链路不连接真实第三方资金渠道。
+
+## CI 验证
+
+`.github/workflows/ci.yml` 在推送或 Pull Request 到 `main` 时执行：
+
+- Java 17 环境下的 `mvn -B package`
+- Node.js 22 与 pnpm 11 下的 `pnpm install --frozen-lockfile`、`pnpm build`
+
+GitHub Actions 的最终状态以仓库 Actions 页面为准。
