@@ -4,6 +4,8 @@
 
 USE `selection_mall`;
 
+SET NAMES utf8mb4;
+
 INSERT INTO brand (id, name, logo, is_deleted) VALUES
     (101, '华为', 'https://macro-oss.oss-cn-shenzhen.aliyuncs.com/mall/images/20180607/huawei.png', 0),
     (102, '小米', 'https://macro-oss.oss-cn-shenzhen.aliyuncs.com/mall/images/20180615/xiaomi.jpg', 0),
