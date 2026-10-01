@@ -10,7 +10,7 @@
     <div class="gallery">
       <van-swipe :autoplay="5000" indicator-color="white">
         <van-swipe-item v-for="(url, i) in detail.sliderUrlList" :key="i">
-          <img :src="url" alt="" class="gallery-img" />
+          <img :src="url" :alt="detail.productSku?.skuName || '商品图片'" class="gallery-img" @error="onImageError" />
         </van-swipe-item>
       </van-swipe>
     </div>
@@ -65,7 +65,7 @@
     <!-- 详情图 -->
     <div class="detail-imgs" v-if="detail.detailsImageUrlList?.length">
       <div class="section-label">商品详情</div>
-      <img v-for="(url, i) in detail.detailsImageUrlList" :key="i" :src="url" alt="" />
+      <img v-for="(url, i) in detail.detailsImageUrlList" :key="i" :src="url" alt="商品详情图" @error="onImageError" />
     </div>
 
     <!-- 底部操作栏 -->
@@ -176,6 +176,11 @@ const selectedSpecText = computed(() => {
 
 const selectSpec = (groupIdx, optIdx) => {
   selectedSpecs.value[groupIdx] = optIdx
+}
+
+const onImageError = (event) => {
+  if (event.target.src.endsWith('/static/errorImage.jpg')) return
+  event.target.src = '/static/errorImage.jpg'
 }
 
 const onAddCart = async () => {

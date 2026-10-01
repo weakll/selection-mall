@@ -55,7 +55,7 @@
           @click="$router.push(`/product/${item.id}`)"
         >
           <div class="img-wrap">
-            <img :src="getImageUrl(item.thumbImg)" alt="" @error="onImgError" />
+            <img :src="getImageUrl(item)" :alt="item.skuName" @error="onImgError" />
             <div v-if="item.saleNum > 100" class="tag">热卖</div>
           </div>
           <div class="content">
@@ -94,7 +94,15 @@ onMounted(async () => {
 })
 
 // 处理图片URL：如果是相对路径则拼上MinIO基础地址
-const getImageUrl = (url) => {
+const getImageUrl = (item) => {
+  const localImages = {
+    1: '/static/products/phone-main.jpg',
+    2: '/static/products/laptop-main.jpg',
+    3: '/static/products/watch-main.jpg',
+    4: '/static/products/shoe-main.jpg'
+  }
+  if (localImages[item.productId]) return localImages[item.productId]
+  const url = item.thumbImg
   if (!url) return '/static/errorImage.jpg'
   if (url.startsWith('http')) return url
   // 相对路径，需要拼接（根据实际情况修改）

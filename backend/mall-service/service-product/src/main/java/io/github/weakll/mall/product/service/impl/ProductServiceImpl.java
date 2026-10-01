@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -148,11 +149,25 @@ public class ProductServiceImpl implements ProductService {
         ProductItemVo productItemVo = new ProductItemVo();
         productItemVo.setProductSku(productSku);
         productItemVo.setProduct(product);
-        productItemVo.setDetailsImageUrlList(Arrays.asList(productDetails.getImageUrls().split(",")));
-        productItemVo.setSliderUrlList(Arrays.asList(product.getSliderUrls().split(",")));
+        productItemVo.setDetailsImageUrlList(parseImageUrls(productDetails.getImageUrls()));
+        productItemVo.setSliderUrlList(parseImageUrls(product.getSliderUrls()));
         productItemVo.setSpecValueList(JSON.parseArray(product.getSpecValue()));
         productItemVo.setSkuSpecValueMap(skuSpecValueMap);
         return productItemVo;
+    }
+
+    private List<String> parseImageUrls(String imageUrls) {
+        if (imageUrls == null || imageUrls.isBlank()) {
+            return Collections.emptyList();
+        }
+        String value = imageUrls.trim();
+        if (value.startsWith("[")) {
+            return JSON.parseArray(value, String.class);
+        }
+        return Arrays.stream(value.split(","))
+                .map(String::trim)
+                .filter(item -> !item.isEmpty())
+                .toList();
     }
 
     private void validateSkuSale(SkuSaleDto skuSaleDto) {
