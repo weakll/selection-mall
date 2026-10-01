@@ -40,7 +40,6 @@
       </div>
       <div class="set-item">
         <span>精选商城</span>
-        <span class="val">鄂应院教学项目</span>
       </div>
     </div>
 
