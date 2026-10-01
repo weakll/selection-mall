@@ -2,6 +2,7 @@ package io.github.weakll.mall.user.controller;
 
 import io.github.weakll.mall.model.dto.h5.UserLoginDto;
 import io.github.weakll.mall.model.dto.h5.UserRegisterDto;
+import io.github.weakll.mall.model.dto.h5.UserResetPasswordDto;
 import io.github.weakll.mall.model.vo.common.Result;
 import io.github.weakll.mall.model.vo.common.ResultCodeEnum;
 import io.github.weakll.mall.model.vo.h5.UserBrowseHistoryVo;
@@ -35,6 +36,13 @@ public class UserInfoController {
     public Result register(@RequestBody UserRegisterDto userRegisterDto) {
         userInfoService.register(userRegisterDto);
         return Result.build(null , ResultCodeEnum.SUCCESS) ;
+    }
+
+    @Operation(summary = "手机号重置密码")
+    @PostMapping("resetPassword")
+    public Result resetPassword(@RequestBody UserResetPasswordDto resetPasswordDto) {
+        userInfoService.resetPassword(resetPasswordDto);
+        return Result.build(null, ResultCodeEnum.SUCCESS);
     }
     @Operation(summary = "会员登录")
     @PostMapping("login")

@@ -21,11 +21,15 @@
           <van-icon name="user-circle-o" size="18" color="#999" />
           <input v-model="form.username" type="text" placeholder="请输入手机号" />
         </div>
-        <div class="input-wrap">
+        <div v-if="mode !== 'forgot'" class="input-wrap">
           <van-icon name="lock" size="18" color="#999" />
           <input v-model="form.password" type="password" placeholder="请输入密码" />
         </div>
-        <div v-if="mode === 'register'" class="input-row">
+        <div v-if="mode === 'forgot'" class="input-wrap">
+          <van-icon name="lock" size="18" color="#999" />
+          <input v-model="form.password" type="password" placeholder="请输入新密码" />
+        </div>
+        <div v-if="mode === 'register' || mode === 'forgot'" class="input-row">
           <div class="input-wrap code-input">
             <van-icon name="comment-o" size="18" color="#999" />
             <input v-model="form.code" type="text" maxlength="6" placeholder="请输入验证码" />
@@ -41,13 +45,14 @@
         block
         round
         :loading="loading"
-        @click="mode === 'login' ? onLogin() : onRegister()"
+        @click="mode === 'login' ? onLogin() : mode === 'register' ? onRegister() : onResetPassword()"
       >
-        {{ mode === 'login' ? '登 录' : '注 册' }}
+        {{ mode === 'login' ? '登 录' : mode === 'register' ? '注 册' : '修改密码' }}
       </van-button>
 
       <div class="extra">
-        <span class="link" @click="onForgotPassword">忘记密码？</span>
+        <span v-if="mode === 'login'" class="link" @click="switchMode('forgot')">忘记密码？</span>
+        <span v-else class="link" @click="switchMode('login')">返回登录</span>
         <span v-if="mode === 'login'" class="link" @click="switchMode('register')">没有账号，立即注册</span>
         <span v-else class="link" @click="switchMode('login')">已有账号，立即登录</span>
       </div>
@@ -65,7 +70,7 @@ import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import { useUserStore } from '../../store/user.js'
-import { login, register } from '../../api/user.js'
+import { login, register, resetPassword, sendCode as requestSendCode } from '../../api/user.js'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -88,18 +93,18 @@ const sendCode = () => {
   }
   codeSending.value = true
   codeCountdown.value = 60
-  showToast('验证码已发送，测试验证码为 123456')
-  countdownTimer = window.setInterval(() => {
-    codeCountdown.value -= 1
-    if (codeCountdown.value <= 0) {
-      window.clearInterval(countdownTimer)
-      codeSending.value = false
-    }
-  }, 1000)
-}
-
-const onForgotPassword = () => {
-  showToast('找回密码功能暂未开放，请联系客服处理')
+  requestSendCode(form.username).then(() => {
+    showToast('验证码已发送，请查收短信')
+    countdownTimer = window.setInterval(() => {
+      codeCountdown.value -= 1
+      if (codeCountdown.value <= 0) {
+        window.clearInterval(countdownTimer)
+        codeSending.value = false
+      }
+    }, 1000)
+  }).catch(() => {
+    codeSending.value = false
+  })
 }
 
 const onLogin = async () => {
@@ -131,6 +136,26 @@ const onRegister = async () => {
       code: form.code,
     })
     showToast('注册成功，请登录')
+    mode.value = 'login'
+  } catch (e) {}
+  loading.value = false
+}
+
+const onResetPassword = async () => {
+  if (!form.username || !form.password || !form.code) {
+    showToast('请填写完整信息')
+    return
+  }
+  loading.value = true
+  try {
+    await resetPassword({
+      username: form.username,
+      password: form.password,
+      code: form.code,
+    })
+    showToast('密码修改成功，请登录')
+    form.password = ''
+    form.code = ''
     mode.value = 'login'
   } catch (e) {}
   loading.value = false

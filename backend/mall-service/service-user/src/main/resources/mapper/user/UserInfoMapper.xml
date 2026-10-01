@@ -50,4 +50,11 @@
         username = #{username}
     </select>
 
+    <update id="updatePasswordByUsername">
+        update user_info
+        set password = #{password}, update_time = now()
+        where username = #{username}
+          and is_deleted = 0
+    </update>
+
 </mapper>

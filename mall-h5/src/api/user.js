@@ -2,6 +2,8 @@ import request from './request'
 
 export const login = (data) => request.post('/user/userInfo/login', data)
 export const register = (data) => request.post('/user/userInfo/register', data)
+export const resetPassword = (data) => request.post('/user/userInfo/resetPassword', data)
+export const sendCode = (phone) => request.get(`/user/sms/sendCode/${phone}`)
 export const getUserInfo = () => request.get('/user/userInfo/auth/getCurrentUserInfo')
 export const getAddressList = () => request.get('/user/userAddress/auth/findUserAddressList')
 export const saveAddress = (data) => request.post('/user/userAddress/auth/save', data)

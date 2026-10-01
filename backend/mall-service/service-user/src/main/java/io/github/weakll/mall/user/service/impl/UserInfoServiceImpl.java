@@ -5,6 +5,7 @@ import com.alibaba.nacos.common.utils.StringUtils;
 import io.github.weakll.mall.common.exception.MallException;
 import io.github.weakll.mall.model.dto.h5.UserLoginDto;
 import io.github.weakll.mall.model.dto.h5.UserRegisterDto;
+import io.github.weakll.mall.model.dto.h5.UserResetPasswordDto;
 import io.github.weakll.mall.model.entity.user.UserInfo;
 import io.github.weakll.mall.model.vo.common.ResultCodeEnum;
 import io.github.weakll.mall.model.vo.h5.UserInfoVo;
@@ -50,7 +51,7 @@ public class UserInfoServiceImpl implements UserInfoService {
         }
 
         //校验校验验证码
-        String codeValueRedis = redisTemplate.opsForValue().get(username);
+        String codeValueRedis = redisTemplate.opsForValue().get("phone:code:" + username);
         if(!code.equals(codeValueRedis)) {
             throw new MallException(ResultCodeEnum.VALIDATECODE_ERROR);
         }
@@ -72,7 +73,35 @@ public class UserInfoServiceImpl implements UserInfoService {
         userInfoMapper.save(userInfo);
 
         // 删除Redis中的数据
-        redisTemplate.delete(username);
+        redisTemplate.delete("phone:code:" + username);
+
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public void resetPassword(UserResetPasswordDto resetPasswordDto) {
+        String username = resetPasswordDto.getUsername();
+        String password = resetPasswordDto.getPassword();
+        String code = resetPasswordDto.getCode();
+        if (StringUtils.isEmpty(username) || StringUtils.isEmpty(password) || StringUtils.isEmpty(code)) {
+            throw new MallException(ResultCodeEnum.DATA_ERROR);
+        }
+
+        String codeValueRedis = redisTemplate.opsForValue().get("phone:code:" + username);
+        if (!code.equals(codeValueRedis)) {
+            throw new MallException(ResultCodeEnum.VALIDATECODE_ERROR);
+        }
+
+        UserInfo userInfo = userInfoMapper.getByUsername(username);
+        if (userInfo == null) {
+            throw new MallException(ResultCodeEnum.LOGIN_ERROR);
+        }
+
+        userInfoMapper.updatePasswordByUsername(
+                username,
+                DigestUtils.md5DigestAsHex(password.getBytes())
+        );
+        redisTemplate.delete("phone:code:" + username);
 
     }
 
