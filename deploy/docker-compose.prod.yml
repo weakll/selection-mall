@@ -6,6 +6,9 @@ services:
       context: ../backend/mall-gateway
     environment:
       NACOS_SERVER_ADDR: nacos:8848
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-change_me}
     depends_on: []
     ports: ["8500:8500"]
     networks: [mall-network]
