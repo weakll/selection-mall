@@ -117,7 +117,7 @@ const onLogin = async () => {
     const token = await login({ username: form.username, password: form.password })
     userStore.setToken(token)
     showToast({ message: '登录成功', icon: 'success' })
-    router.replace('/user')
+    await router.replace({ name: 'User' })
   } catch (e) {}
   loading.value = false
 }

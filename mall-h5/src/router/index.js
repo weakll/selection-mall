@@ -28,6 +28,10 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   document.title = to.meta.title || '精选商城'
+  if (to.name === 'Login' && localStorage.getItem('token')) {
+    next({ name: 'User', replace: true })
+    return
+  }
   next()
 })
 
