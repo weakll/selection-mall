@@ -70,10 +70,10 @@
         type="primary"
         size="small"
         color="#ff6600"
-        :disabled="!inputText.trim()"
+        :disabled="!inputText.trim() || sending"
         @click="sendMessage"
       >
-        发送
+        {{ sending ? '回复中' : '发送' }}
       </van-button>
     </div>
   </div>
@@ -82,67 +82,29 @@
 <script setup>
 import { ref, nextTick } from 'vue'
 import { showToast } from 'vant'
+import { getApiBaseUrl } from '../../utils/config.js'
 
 const inputText = ref('')
 const chatBox = ref(null)
+const sending = ref(false)
 
 const messages = ref([
   { type: 'receive', content: '您好！欢迎来到精选商城，我是您的专属客服小选，请问有什么可以帮您？' }
 ])
 
+// 常见问题与问题原文都取自后端知识库（service-ai 的 ai/faq-knowledge.yml）。
+// 保留快捷入口是为了让用户少打字；即使不点，直接输入同样能命中。
+// 增删知识库条目时需同步本列表，否则快捷提问会答非所问。
 const faqList = [
-  { question: '订单什么时候发货？', answer: '亲，一般情况下订单会在付款后24小时内发货，节假日可能会有延迟，请您耐心等待~' },
-  { question: '如何申请退换货？', answer: '亲，我们支持7天无理由退换货。您可以在"我的订单"中找到对应订单，点击"申请售后"即可。' },
-  { question: '优惠券怎么使用？', answer: '亲，在确认订单页面可以选择可用的优惠券，系统会自动为您计算减免金额。' },
-  { question: '忘记密码怎么办？', answer: '亲，您可以在登录页面点击"忘记密码"，通过手机号验证码重置密码。' },
-  { question: '支持哪些支付方式？', answer: '亲，目前我们支持微信支付和支付宝支付，您可以在提交订单时选择支付方式。' }
+  { question: '订单什么时候发货？', prompt: '订单什么时候发货？' },
+  { question: '如何申请退换货？', prompt: '我想退货，怎么申请？' },
+  { question: '优惠券怎么使用？', prompt: '优惠券怎么使用？' },
+  { question: '可以开发票吗？', prompt: '可以开发票吗？' },
+  { question: '支持哪些支付方式？', prompt: '支持哪些支付方式？' }
 ]
 
-const sendMessage = () => {
-  const text = inputText.value.trim()
-  if (!text) return
-
-  // 用户消息
-  messages.value.push({ type: 'send', content: text })
-  inputText.value = ''
-  scrollToBottom()
-
-  // 模拟客服回复
-  setTimeout(() => {
-    const reply = getReply(text)
-    messages.value.push({ type: 'receive', content: reply })
-    scrollToBottom()
-  }, 800)
-}
-
-const sendFaq = (answer) => {
-  messages.value.push({ type: 'send', content: '我想问一下这个问题' })
-  scrollToBottom()
-  setTimeout(() => {
-    messages.value.push({ type: 'receive', content: answer })
-    scrollToBottom()
-  }, 600)
-}
-
-const getReply = (text) => {
-  const lower = text.toLowerCase()
-  if (lower.includes('发货') || lower.includes('快递') || lower.includes('物流')) {
-    return '亲，订单付款后24小时内发货，您可以在"我的订单"中查看物流信息。'
-  }
-  if (lower.includes('退') || lower.includes('换') || lower.includes('售后')) {
-    return '亲，我们支持7天无理由退换货，请在"我的订单"中申请售后。'
-  }
-  if (lower.includes('优惠券') || lower.includes('折扣') || lower.includes('满减')) {
-    return '亲，新用户注册即送3张优惠券，在确认订单页可以选择使用。'
-  }
-  if (lower.includes('支付') || lower.includes('付款') || lower.includes('钱')) {
-    return '亲，我们支持微信支付和支付宝支付，请放心下单。'
-  }
-  if (lower.includes(' hello') || lower.includes('你好') || lower.includes('在吗')) {
-    return '亲，我在的~ 请问有什么可以帮您？'
-  }
-  return '亲，收到您的问题，我已记录并会尽快为您处理。如有紧急问题请拨打客服热线 400-123-4567。'
-}
+/** 读取登录凭据；未登录为 null。后端 /api/ai/auth/** 由网关强制校验。 */
+const getToken = () => localStorage.getItem('token')
 
 const scrollToBottom = () => {
   nextTick(() => {
@@ -150,6 +112,124 @@ const scrollToBottom = () => {
       chatBox.value.scrollTop = chatBox.value.scrollHeight
     }
   })
+}
+
+/** 取最后一条回复对象，流式过程中持续往它追加内容。 */
+const lastReply = () => {
+  const list = messages.value
+  return list.length ? list[list.length - 1] : null
+}
+
+/**
+ * 解析 SSE 字符流。
+ *
+ * 服务端事件形如：
+ *   event:delta
+ *   data:{"content":"您"}
+ *
+ * 这里刻意不复用项目的 axios 封装：axios 走 XHR，无法逐块读取响应体，
+ * 用它就只能等整段回答生成完才显示，逐字效果会消失。
+ */
+const readSseStream = async (response) => {
+  const reader = response.body.getReader()
+  const decoder = new TextDecoder('utf-8')
+  let buffer = ''
+
+  const handleBlock = (block) => {
+    let eventName = ''
+    const dataLines = []
+    for (const line of block.split('\n')) {
+      if (line.startsWith('event:')) {
+        eventName = line.slice(6).trim()
+      } else if (line.startsWith('data:')) {
+        dataLines.push(line.slice(5).trim())
+      }
+    }
+    if (!dataLines.length) return
+
+    let payload
+    try {
+      payload = JSON.parse(dataLines.join('\n'))
+    } catch {
+      return
+    }
+
+    if (eventName === 'delta') {
+      const reply = lastReply()
+      if (reply) reply.content += payload.content || ''
+      scrollToBottom()
+    } else if (eventName === 'error') {
+      const reply = lastReply()
+      if (reply) reply.content = payload.message || '抱歉，服务暂时不可用，请稍后再试。'
+      scrollToBottom()
+    }
+    // done 事件仅表示收尾，无需额外处理
+  }
+
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    buffer += decoder.decode(value, { stream: true })
+
+    let sep = buffer.indexOf('\n\n')
+    while (sep !== -1) {
+      handleBlock(buffer.slice(0, sep))
+      buffer = buffer.slice(sep + 2)
+      sep = buffer.indexOf('\n\n')
+    }
+  }
+  // 处理末尾可能残留的事件块
+  if (buffer.trim()) handleBlock(buffer)
+}
+
+/** 发送一条提问并流式接收回答。 */
+const ask = async (text) => {
+  const question = (text || '').trim()
+  if (!question || sending.value) return
+
+  messages.value.push({ type: 'send', content: question })
+  messages.value.push({ type: 'receive', content: '' })
+  scrollToBottom()
+  sending.value = true
+
+  try {
+    const query = new URLSearchParams({ message: question })
+    const response = await fetch(`${getApiBaseUrl()}/api/ai/auth/chat/stream?${query}`, {
+      headers: { token: getToken() || '' }
+    })
+
+    if (response.status === 401 || response.status === 403) {
+      const reply = lastReply()
+      if (reply) reply.content = '请先登录后再咨询订单相关问题哦～'
+      showToast('请先登录')
+      return
+    }
+    if (!response.ok || !response.body) {
+      throw new Error(`HTTP ${response.status}`)
+    }
+
+    await readSseStream(response)
+  } catch (error) {
+    const reply = lastReply()
+    if (reply && !reply.content) {
+      reply.content = '抱歉，客服暂时无法响应，请稍后再试或拨打热线 400-123-4567。'
+    }
+    console.error('[客服] 对话失败', error)
+  } finally {
+    sending.value = false
+    scrollToBottom()
+  }
+}
+
+const sendMessage = () => {
+  if (sending.value) return
+  const text = inputText.value
+  inputText.value = ''
+  ask(text)
+}
+
+const sendFaq = (prompt) => {
+  ask(prompt)
 }
 
 const callService = () => {
@@ -303,6 +383,16 @@ const callService = () => {
   font-size: 13px;
   line-height: 1.6;
   word-break: break-word;
+}
+
+/*
+ * 保留模型回答里的换行。AI 回复是多行结构（列表、分段），
+ * 默认的 white-space:normal 会把 \n 折叠成空格，整段挤成一坨。
+ * 这里用 pre-line 而非 pre-wrap：保留换行、折叠多余空格，
+ * 比改模板走 v-html 更安全——模型输出不可信，插 HTML 会有 XSS 风险。
+ */
+.msg-content {
+  white-space: pre-line;
 }
 
 .msg-bubble.receive {

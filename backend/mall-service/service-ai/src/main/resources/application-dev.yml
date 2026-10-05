@@ -1,0 +1,43 @@
+server:
+  port: 8516
+
+spring:
+  application:
+    name: service-ai
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:change_me}
+
+# AI 客服配置。
+# api-key 只从环境变量读，不落配置文件；deploy/.env 已被 .gitignore 忽略（见 .gitignore 第 21 行）。
+mall:
+  ai:
+    enabled: ${MALL_AI_ENABLED:true}
+    model:
+      provider: deepseek
+      base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
+      api-key: ${DEEPSEEK_API_KEY:}
+      model: ${DEEPSEEK_MODEL:deepseek-chat}
+      # 首字超时与整体超时：客服场景首包慢会让用户以为没反应
+      connect-timeout-ms: ${MALL_AI_CONNECT_TIMEOUT_MS:10000}
+      read-timeout-ms: ${MALL_AI_READ_TIMEOUT_MS:120000}
+    agent:
+      max-iters: ${MALL_AI_MAX_ITERS:6}
+      system-prompt: |
+        你是精选商城的在线客服助手，名字叫"小选"。
+        要求：
+        1. 用简体中文回答，语气亲切简洁，不要输出 Markdown 表格或代码块。
+        2. 涉及商品信息时调用 queryProduct 工具查询真实数据，不要编造价格和库存。
+        3. 涉及用户自己的订单时调用 queryMyOrders 工具，只能查询当前登录用户自己的订单。
+        4. 涉及退换货、发票、配送等政策问题时调用 searchFaq 工具，按知识库内容回答。
+        5. 工具查不到的信息，如实告知用户，并建议联系人工客服，不要猜测。
+
+logging:
+  level:
+    io.github.weakll.mall.ai: ${MALL_AI_LOG_LEVEL:INFO}

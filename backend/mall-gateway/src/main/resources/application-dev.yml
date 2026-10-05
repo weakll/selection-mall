@@ -42,3 +42,12 @@ spring:
           uri: lb://service-pay
           predicates:
              - Path=/api/order/alipay/**
+        # AI 客服：/api/ai/auth/** 由 AuthGlobalFilter 强制登录，其余 /api/ai/** 公开。
+        # SSE 是长连接，单独放宽该路由超时，避免流被中途掐断。
+        - id: service-ai
+          uri: lb://service-ai
+          predicates:
+            - Path=/api/ai/**
+          metadata:
+            response-timeout: 600000
+            connect-timeout: 10000

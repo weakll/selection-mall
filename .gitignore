@@ -44,3 +44,7 @@ Thumbs.db
 *.tmp
 *.bak
 *.swp
+# Some editors write via a sibling temp dir ("<file>.<pid>.<uuid>.tmpdir/").
+# Besides being noise, such a dir can crash Vite's file watcher with EBUSY
+# while it is being written, so keep it out of the tree entirely.
+.*.tmpdir/

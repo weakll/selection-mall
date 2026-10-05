@@ -1,0 +1,83 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>io.github.weakll.mall</groupId>
+        <artifactId>mall-service</artifactId>
+        <version>1.0-SNAPSHOT</version>
+    </parent>
+    <artifactId>service-ai</artifactId>
+    <name>service-ai</name>
+    <description>AI customer service: SSE streaming chat over mall business tools</description>
+
+    <properties>
+        <!--
+          AgentScope：框架无关的 Agent 运行时（ReAct 循环 / 工具调用 / 流式事件）。
+          本机已验证 2.0.2 全部 class 为 Java 17 字节码，且在 Spring Boot 3.0.5 下
+          编译与类加载均通过；其传递依赖 reactor-core / jackson 收敛到 Boot 3.0.5
+          管理版本（3.5.4 / 2.14.2），未引用更高版本专属 API。
+        -->
+        <agentscope.version>2.0.2</agentscope.version>
+    </properties>
+
+    <dependencies>
+        <!--
+          Redis：必需，不是可选项。
+          @EnableUserWebMvcConfiguration 会装配 common-service 的 UserLoginAuthInterceptor，
+          它注入 RedisTemplate<String,String> 从 mall:user:{token} 解析当前登录用户。
+          缺这个依赖时启动即报 NoClassDefFoundError: RedisTemplate。
+          AI 侧同时用它承载后续的对话上下文缓存。
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+
+        <!-- 业务工具通过 Feign 调既有服务，不直接读别人的库表 -->
+        <dependency>
+            <groupId>io.github.weakll.mall</groupId>
+            <artifactId>service-product-client</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>io.github.weakll.mall</groupId>
+            <artifactId>service-order-client</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+
+        <!-- openfeign：mall-service-client 里是 provided，运行期要显式带上 -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-openfeign</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-loadbalancer</artifactId>
+        </dependency>
+
+        <!-- Agent 运行时 -->
+        <dependency>
+            <groupId>io.agentscope</groupId>
+            <artifactId>agentscope-core</artifactId>
+            <version>${agentscope.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.agentscope</groupId>
+            <artifactId>agentscope-extensions-model-openai</artifactId>
+            <version>${agentscope.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- 生成配置元数据，避免 IDE 对 mall.ai.* 报未知属性 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-configuration-processor</artifactId>
+            <optional>true</optional>
+        </dependency>
+    </dependencies>
+</project>
