@@ -8,6 +8,19 @@ spring:
     nacos:
       discovery:
         server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
+  # 数据源用途单一：存放售后政策知识库的检索索引（faq_knowledge 表，含 ngram 全文索引）。
+  # 商品与订单数据仍走 Feign，不读商城业务库。数据库不可用时检索自动退回词表匹配，
+  # 服务不会因此起不来（见 FaqKnowledgeSource 的降级说明）。
+  datasource:
+    type: com.zaxxer.hikari.HikariDataSource
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:3307}/${MYSQL_DATABASE:selection_mall}?serverTimezone=UTC&characterEncoding=utf8&useUnicode=true&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USERNAME:selection_mall}
+    password: ${MYSQL_PASSWORD:change_me}
+    hikari:
+      # 知识库只有 63 行、低频访问，连接池给小一些即可
+      maximum-pool-size: 4
+      minimum-idle: 1
   data:
     redis:
       host: ${REDIS_HOST:127.0.0.1}

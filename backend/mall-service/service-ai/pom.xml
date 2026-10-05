@@ -26,11 +26,20 @@
           @EnableUserWebMvcConfiguration 会装配 common-service 的 UserLoginAuthInterceptor，
           它注入 RedisTemplate<String,String> 从 mall:user:{token} 解析当前登录用户。
           缺这个依赖时启动即报 NoClassDefFoundError: RedisTemplate。
-          AI 侧同时用它承载后续的对话上下文缓存。
         -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+
+        <!--
+          JDBC：知识库检索索引存于 MySQL 的 faq_knowledge 表（含 ngram 全文索引）。
+          只用 JdbcTemplate，不使用 MyBatis（已在 AiApplication 排除其自动装配）。
+          若数据库不可用，检索自动退回内存词表匹配，服务不会因此起不来。
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-jdbc</artifactId>
         </dependency>
 
         <!-- 业务工具通过 Feign 调既有服务，不直接读别人的库表 -->

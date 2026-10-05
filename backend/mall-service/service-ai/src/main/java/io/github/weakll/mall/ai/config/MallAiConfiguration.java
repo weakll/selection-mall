@@ -5,6 +5,7 @@ import io.agentscope.extensions.model.openai.OpenAIChatModel;
 import io.agentscope.extensions.model.openai.compat.deepseek.DeepSeekFormatter;
 import io.github.weakll.mall.ai.agent.ReActChatClient;
 import io.github.weakll.mall.ai.model.ChatClient;
+import io.github.weakll.mall.ai.rag.LlmReranker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -56,5 +57,20 @@ public class MallAiConfiguration {
                                 io.github.weakll.mall.ai.tool.OrderTools orderTools,
                                 io.github.weakll.mall.ai.tool.FaqTools faqTools) {
         return new ReActChatClient(properties, chatModel, productTools, orderTools, faqTools);
+    }
+
+    /**
+     * 知识库检索的 LLM 精排组件。
+     *
+     * <p>它把"词都在但语义无关"的候选剔除掉——实测越界问题的正确拒绝率
+     * 由 60% 提升到 100%（见 {@code FaqKnowledgeSource#retrieve} 的实测表）。
+     *
+     * <p>无密钥时组件仍会创建，但 {@code rerank} 直接返回原顺序，
+     * 检索链路退化为纯 RRF 融合，不影响可用性。
+     */
+    @Bean
+    @ConditionalOnMissingBean(LlmReranker.class)
+    public LlmReranker llmReranker(MallAiProperties properties) {
+        return new LlmReranker(properties);
     }
 }
