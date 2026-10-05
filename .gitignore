@@ -26,6 +26,11 @@
 **/application-secret.yml
 **/application-secret.yaml
 
+# Local database exports and backups
+deploy/mysql/db_spzx.sql
+deploy/mysql/db_spzx-import-selection-mall.sql
+deploy/mysql/selection_mall-backup-before-db-spzx-import.sql
+
 # Logs and runtime output
 **/logs/
 *.log
