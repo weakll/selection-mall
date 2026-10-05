@@ -1,80 +1,23 @@
--- Demo data converted to selection-mall schema.
--- Source reference: https://github.com/macrozheng/mall-swarm
--- This file contains public demo catalog data only. It does not import users, orders or credentials.
--- Product image assets are local copies sourced from Unsplash; see docs/demo-assets.md.
+-- 本地演示用的优惠券数据。
+--
+-- 说明：本文件原本还包含一组来自开源模板的演示商品（华为 P20 / 小米8 / iPhone 8 Plus /
+-- NIKE 气垫鞋）及其品牌与分类。那批数据与"自营严选"定位冲突，且与自营商品目录
+-- 形成两份商品数据源，已在重构中移除。
+--
+-- 商品目录的唯一数据源是 deploy/mysql/catalog.sql（8 商品 / 20 SKU），
+-- 由 scripts/gen_catalog.py 生成。
 
 USE `selection_mall`;
 
 SET NAMES utf8mb4;
 
-INSERT INTO brand (id, name, logo, is_deleted) VALUES
-    (101, '华为', 'https://macro-oss.oss-cn-shenzhen.aliyuncs.com/mall/images/20180607/huawei.png', 0),
-    (102, '小米', 'https://macro-oss.oss-cn-shenzhen.aliyuncs.com/mall/images/20180615/xiaomi.jpg', 0),
-    (103, '苹果', 'https://macro-oss.oss-cn-shenzhen.aliyuncs.com/mall/images/20180615/apple.jpg', 0),
-    (104, 'NIKE', 'https://macro-oss.oss-cn-shenzhen.aliyuncs.com/mall/images/20180615/nike.jpg', 0)
-ON DUPLICATE KEY UPDATE name = VALUES(name), logo = VALUES(logo), is_deleted = 0;
-
-INSERT INTO category (id, name, image_url, parent_id, status, order_num, is_deleted) VALUES
-    (101, '手机数码', 'https://macro-oss.oss-cn-shenzhen.aliyuncs.com/mall/images/20180615/phone.png', 0, 1, 1, 0),
-    (102, '手机通讯', NULL, 101, 1, 1, 0),
-    (103, '运动鞋服', 'https://macro-oss.oss-cn-shenzhen.aliyuncs.com/mall/images/20180615/shoes.png', 0, 1, 2, 0),
-    (104, '运动鞋', NULL, 103, 1, 1, 0)
-ON DUPLICATE KEY UPDATE name = VALUES(name), image_url = VALUES(image_url), parent_id = VALUES(parent_id), status = 1, is_deleted = 0;
-
-INSERT INTO category_brand (id, brand_id, category_id, is_deleted) VALUES
-    (101, 101, 102, 0),
-    (102, 102, 102, 0),
-    (103, 103, 102, 0),
-    (104, 104, 104, 0)
-ON DUPLICATE KEY UPDATE brand_id = VALUES(brand_id), category_id = VALUES(category_id), is_deleted = 0;
-
-INSERT INTO product (id, name, brand_id, category1_id, category2_id, category3_id, unit_name,
-                    slider_urls, spec_value, status, audit_status, audit_message, is_deleted) VALUES
-    (101, '华为 HUAWEI P20 全面屏智能手机', 101, 101, 102, NULL, '部',
-     '["/static/products/phone-main.jpg"]',
-     '[{"key":"颜色","value":"亮黑色"},{"key":"容量","value":"64GB"}]', 1, 1, NULL, 0),
-    (102, '小米8 全面屏游戏智能手机', 102, 101, 102, NULL, '部',
-     '["/static/products/phone-main.jpg"]',
-     '[{"key":"颜色","value":"黑色"},{"key":"容量","value":"64GB"}]', 1, 1, NULL, 0),
-    (103, 'Apple iPhone 8 Plus', 103, 101, 102, NULL, '部',
-     '["/static/products/phone-main.jpg"]',
-     '[{"key":"颜色","value":"红色"},{"key":"容量","value":"64GB"}]', 1, 1, NULL, 0),
-    (104, 'NIKE 男子气垫休闲鞋', 104, 103, 104, NULL, '双',
-     '["/static/products/shoe-main.jpg"]',
-     '[{"key":"颜色","value":"白色"},{"key":"尺寸","value":"41"}]', 1, 1, NULL, 0)
-ON DUPLICATE KEY UPDATE name = VALUES(name), brand_id = VALUES(brand_id), category1_id = VALUES(category1_id),
-    category2_id = VALUES(category2_id), unit_name = VALUES(unit_name), slider_urls = VALUES(slider_urls),
-    spec_value = VALUES(spec_value), status = 1, audit_status = 1, is_deleted = 0;
-
-INSERT INTO product_sku (id, sku_code, sku_name, product_id, thumb_img, sale_price, market_price, cost_price,
-                        stock_num, sale_num, sku_spec, weight, volume, status, is_deleted) VALUES
-    (101, 'DEMO-HUAWEI-P20-64', '华为 HUAWEI P20 64GB 亮黑色', 101,
-     '/static/products/phone-main.jpg', 3788.00, 4288.00, 3200.00,
-     100, 120, '[{"key":"颜色","value":"亮黑色"},{"key":"容量","value":"64GB"}]', '0.2kg', '0.01m3', 1, 0),
-    (102, 'DEMO-XIAOMI-8-64', '小米8 6GB+64GB 黑色', 102,
-     '/static/products/phone-main.jpg', 2699.00, 2999.00, 2200.00,
-     100, 180, '[{"key":"颜色","value":"黑色"},{"key":"容量","value":"64GB"}]', '0.2kg', '0.01m3', 1, 0),
-    (103, 'DEMO-IPHONE8P-64', 'Apple iPhone 8 Plus 64GB 红色', 103,
-     '/static/products/phone-main.jpg', 4999.00, 5499.00, 4300.00,
-     100, 90, '[{"key":"颜色","value":"红色"},{"key":"容量","value":"64GB"}]', '0.3kg', '0.01m3', 1, 0),
-    (104, 'DEMO-NIKE-AIRMAX-41', 'NIKE AIR MAX 90 白色 41码', 104,
-     '/static/products/shoe-main.jpg', 599.00, 799.00, 420.00,
-     100, 60, '[{"key":"颜色","value":"白色"},{"key":"尺寸","value":"41"}]', '0.8kg', '0.02m3', 1, 0)
-ON DUPLICATE KEY UPDATE sku_name = VALUES(sku_name), product_id = VALUES(product_id), thumb_img = VALUES(thumb_img),
-    sale_price = VALUES(sale_price), market_price = VALUES(market_price), cost_price = VALUES(cost_price),
-    stock_num = VALUES(stock_num), sku_spec = VALUES(sku_spec), status = 1, is_deleted = 0;
-
-INSERT INTO product_details (id, product_id, image_urls, is_deleted) VALUES
-    (101, 101, '["/static/products/phone-detail-1.jpg","/static/products/phone-detail-2.jpg"]', 0),
-    (102, 102, '["/static/products/phone-detail-1.jpg","/static/products/phone-detail-2.jpg"]', 0),
-    (103, 103, '["/static/products/phone-detail-1.jpg","/static/products/phone-detail-2.jpg"]', 0),
-    (104, 104, '["/static/products/shoe-main.jpg"]', 0)
-ON DUPLICATE KEY UPDATE image_urls = VALUES(image_urls), is_deleted = 0;
-
--- A small coupon set for local UI verification. Coupon status 1 means published.
+-- 少量优惠券，用于本地验证领券与下单抵扣。publish_status = 1 表示已发布。
 INSERT INTO coupon_info (id, coupon_type, coupon_name, amount, condition_amount, publish_count, per_limit,
                          publish_status, expire_time, is_deleted) VALUES
-    (101, 1, '演示新人券', 10.00, 0.00, 9999, 1, 1, DATE_ADD(NOW(), INTERVAL 90 DAY), 0),
-    (102, 2, '演示满50减15', 15.00, 50.00, 9999, 1, 1, DATE_ADD(NOW(), INTERVAL 90 DAY), 0)
-ON DUPLICATE KEY UPDATE coupon_name = VALUES(coupon_name), amount = VALUES(amount), condition_amount = VALUES(condition_amount),
-    publish_status = 1, expire_time = VALUES(expire_time), is_deleted = 0;
+    (101, 1, '新人无门槛券', 10.00, 0.00, 9999, 1, 1, DATE_ADD(NOW(), INTERVAL 90 DAY), 0),
+    (102, 2, '满 99 减 20', 20.00, 99.00, 9999, 1, 1, DATE_ADD(NOW(), INTERVAL 90 DAY), 0),
+    (103, 2, '满 299 减 50', 50.00, 299.00, 9999, 1, 1, DATE_ADD(NOW(), INTERVAL 90 DAY), 0),
+    (104, 2, '满 999 减 150', 150.00, 999.00, 9999, 1, 1, DATE_ADD(NOW(), INTERVAL 90 DAY), 0)
+ON DUPLICATE KEY UPDATE coupon_name = VALUES(coupon_name), amount = VALUES(amount),
+    condition_amount = VALUES(condition_amount), publish_status = 1,
+    expire_time = VALUES(expire_time), is_deleted = 0;

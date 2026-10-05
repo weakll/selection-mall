@@ -47,6 +47,24 @@ docker compose --env-file .env -f deploy/docker-compose.yml down
 - 真实环境必须修改 `.env` 中的默认密码。
 - Compose 文件基于 Nacos Client `2.2.1`，服务端固定为 `nacos/nacos-server:v2.2.1`。
 
+## 演示数据导入
+
+`init.sql` 只建表结构，不含商品数据。新装环境需要按顺序导入以下两个脚本：
+
+```powershell
+# 1) 商品目录：8 商品 / 20 SKU / 1 个自营品牌（自营严选定位）
+Get-Content -Raw -Encoding UTF8 .\deploy\mysql\catalog.sql |
+  docker compose --env-file .env -f .\deploy\docker-compose.yml exec -T mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql -uroot'
+
+# 2) 演示优惠券
+Get-Content -Raw -Encoding UTF8 .\deploy\mysql\demo-data.sql |
+  docker compose --env-file .env -f .\deploy\docker-compose.yml exec -T mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql -uroot'
+```
+
+`catalog.sql` 由 `scripts/gen_catalog.py` 生成，可重复执行（幂等），
+并会同步历史订单明细里反规范化存储的商品名与图片。商品配图的生成方式见
+[演示数据与商品配图](../docs/demo-assets.md)。
+
 ## 生产化部署
 
 生产 Compose 会构建 H5、网关和业务服务镜像；MySQL、Redis、Nacos 作为外部基础设施运行。先启动基础设施并完成后端打包，再在仓库根目录执行：
